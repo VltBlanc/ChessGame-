@@ -3,7 +3,7 @@
 #include "chess.h"
 #include "game.h"
 #include "ds.h"
-#include <dlfcn.h>
+#include "dlfcn.h"
 
 #define SUBCMD_GAME "game"
 #define SUBCMD_COUNT_POSITIONS "count-positions"
@@ -89,21 +89,26 @@ void parse_arguments(int argc, char **argv, arguments_t *args) {
 }
 
 int load_move_function(const char *player, move_fn *move_player, init_fn *init_player) {
+    if (player == NULL) {
+        fprintf(stderr, "Erreur : Chemin du joueur (DLL/SO) non spécifié !\n");
+        return -1;
+    }
+
     void *strat = dlopen(player, RTLD_NOW);
     if (strat == NULL) {
-        fprintf(stderr, "%s\n", dlerror());
+        fprintf(stderr, "Erreur dlopen (%s) : %s\n", player, dlerror());
         return -1;
     }
 
     *move_player = (move_fn)dlsym(strat, "chess_move");
-    if (move_player == NULL) {
-        fprintf(stderr, "%s\n", dlerror());
+    if (*move_player == NULL) { // Correction : on teste le contenu (*), pas le pointeur
+        fprintf(stderr, "Erreur dlsym (chess_move) : %s\n", dlerror());
         return -1;
     }
 
     *init_player = (init_fn)dlsym(strat, "chess_init");
-    if (init_player == NULL) {
-        fprintf(stderr, "%s\n", dlerror());
+    if (*init_player == NULL) { // Correction : on teste le contenu (*)
+        fprintf(stderr, "Erreur dlsym (chess_init) : %s\n", dlerror());
         return -1;
     }
 

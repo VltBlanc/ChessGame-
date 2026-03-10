@@ -1,5 +1,7 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -pg
+CFLAGS = -Wall -Wextra -std=c11 -fPIC
+# Remplacez cette ligne
+LDLIBS = -L/ucrt64/lib -lraylib -lopengl32 -lgdi32 -lwinmm -lws2_32
 SRC = src
 OUT = dist
 
@@ -9,12 +11,16 @@ all: $(OUT)/main $(OUT)/libhuman.so $(OUT)/librandom.so $(OUT)/libminmax.so
 
 $(OUT):
 	mkdir -p $(OUT)
-	cp $(SRC)/assets $(OUT)/ -r
+	if [ -d "$(SRC)/assets" ]; then cp -r $(SRC)/assets $(OUT)/; fi
 
-$(OUT)/main: $(OUT)/main.o $(OUT)/game.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o | $(OUT)
-	$(CC) $(CFLAGS) -lraylib -o $@ $^
+# Correction : placer $(LDLIBS) à la fin de la ligne
+$(OUT)/main: $(OUT)/main.o $(OUT)/game.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o $(OUT)/dlfcn.o | $(OUT)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(OUT)/main.o: $(SRC)/main.c $(SRC)/game.h $(SRC)/chess.h $(SRC)/ds.h | $(OUT)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OUT)/dlfcn.o: src/dlfcn.c src/dlfcn.h | $(OUT)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OUT)/chess.o: $(SRC)/chess.c $(SRC)/chess.h | $(OUT)
@@ -38,14 +44,15 @@ $(OUT)/random.o: $(SRC)/random.c $(SRC)/chess.h $(SRC)/util.h | $(OUT)
 $(OUT)/minmax.o: $(SRC)/minmax.c $(SRC)/chess.h $(SRC)/util.h | $(OUT)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Correction des bibliothèques partagées : même logique pour l'ordre
 $(OUT)/libhuman.so: $(OUT)/human.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o | $(OUT)
-	$(CC) -lraylib -shared -fPIC $^ -o $@
+	$(CC) -shared -fPIC $^ -o $@ $(LDLIBS)
 
 $(OUT)/librandom.so: $(OUT)/random.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o | $(OUT)
-	$(CC) -shared -fPIC $^ -o $@
+	$(CC) -shared -fPIC $^ -o $@ $(LDLIBS)
 
 $(OUT)/libminmax.so: $(OUT)/minmax.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o | $(OUT)
-	$(CC) -shared -fPIC $^ -o $@
+	$(CC) -shared -fPIC $^ -o $@ $(LDLIBS)
 
 clean:
 	rm -rf $(OUT)
