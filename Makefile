@@ -78,3 +78,6 @@ $(OUT)/libminmax.so: $(OUT)/minmax.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o | 
 
 clean:
 	rm -rf $(OUT)
+
+run :
+	./dist/main game ./dist/libhuman.so ./dist/librandom.so
