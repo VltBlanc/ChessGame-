@@ -2,14 +2,25 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c11 -fPIC
 SRC = src
 OUT = dist
+
+
+
 # --- LOGIQUE DÉTECTION OS ---
 ifeq ($(OS),Windows_NT)
     # Windows
     LDLIBS = -L/ucrt64/lib -lraylib -lopengl32 -lgdi32 -lwinmm -lws2_32
     COMPAT_OBJ = $(OUT)/dlfcn.o
 else
-    # Mac/Linux
-    LDLIBS = -ldl
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+        # macOS
+        # On suppose que raylib est installé via Homebrew (/opt/homebrew)
+        LDLIBS = -L/opt/homebrew/lib -lraylib -ldl -lpthread -lm \
+                 -framework CoreVideo -framework IOKit -framework Cocoa -framework GLUT -framework OpenGL
+    else
+        # Linux
+        LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+    endif
     COMPAT_OBJ = 
 endif
 
