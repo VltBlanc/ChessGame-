@@ -3,7 +3,13 @@
 #include "chess.h"
 #include "game.h"
 #include "ds.h"
-#include "dlfcn.h"
+#ifdef _WIN32
+    // On est sous Windows : on utilise votre fichier de compatibilité
+    #include "dlfcn.h" 
+#else
+    // On est sur Mac (ou Linux) : le système possède déjà dlopen
+    #include <dlfcn.h>
+#endif
 
 #define SUBCMD_GAME "game"
 #define SUBCMD_COUNT_POSITIONS "count-positions"
