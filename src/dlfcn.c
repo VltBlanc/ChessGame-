@@ -29,7 +29,9 @@
 #include <stdlib.h> /* malloc() and free() */
 #include <crtdbg.h>
 #endif
-#include <windows.h>
+#ifdef _WIN32
+    #include <windows.h>
+#endif
 
 /* Older versions do not have this type */
 #if _WIN32_WINNT < 0x0500
