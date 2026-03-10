@@ -126,8 +126,15 @@ int game(arguments_t args) {
         return 1;
     }
 
-    if (load_move_function(args.player2, &move_player2, &init_player2) != 0) {
-        return 1;
+    // 2. MODIFICATION : Si le Joueur 2 n'est pas précisé, on utilise le Joueur 1
+    if (args.player2 == NULL) {
+        move_player2 = move_player1;
+        init_player2 = init_player1;
+    } else {
+        // Sinon, on charge le Joueur 2 normalement
+        if (load_move_function(args.player2, &move_player2, &init_player2) != 0) {
+            return 1;
+        }
     }
 
     init_player1_fn(NULL, 0);

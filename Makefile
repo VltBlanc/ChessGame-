@@ -80,4 +80,4 @@ clean:
 	rm -rf $(OUT)
 
 run :
-	./dist/main game ./dist/libhuman.so ./dist/librandom.so
+	./dist/main game ./dist/libhuman.so ./dist/libhuman.so
