@@ -2,6 +2,14 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c11 -fPIC
 # Remplacez cette ligne
 LDLIBS = -L/ucrt64/lib -lraylib -lopengl32 -lgdi32 -lwinmm -lws2_32
+# Détection de l'OS
+ifeq ($(OS),Windows_NT)
+    # Windows : on compile avec la compatibilité dlfcn
+    COMPAT_OBJ = $(OUT)/dlfcn.o
+else
+    # Mac/Linux : pas besoin de dlfcn
+    COMPAT_OBJ =
+endif
 SRC = src
 OUT = dist
 
@@ -14,12 +22,14 @@ $(OUT):
 	if [ -d "$(SRC)/assets" ]; then cp -r $(SRC)/assets $(OUT)/; fi
 
 # Correction : placer $(LDLIBS) à la fin de la ligne
-$(OUT)/main: $(OUT)/main.o $(OUT)/game.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o $(OUT)/dlfcn.o | $(OUT)
+# Modifiez la règle du main pour inclure $(COMPAT_OBJ)
+$(OUT)/main: $(OUT)/main.o $(OUT)/game.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o $(COMPAT_OBJ) | $(OUT)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(OUT)/main.o: $(SRC)/main.c $(SRC)/game.h $(SRC)/chess.h $(SRC)/ds.h | $(OUT)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Ajoutez cette règle pour ne compiler dlfcn que si nécessaire
 $(OUT)/dlfcn.o: src/dlfcn.c src/dlfcn.h | $(OUT)
 	$(CC) $(CFLAGS) -c $< -o $@
 
