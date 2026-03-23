@@ -98,3 +98,5 @@ int send_message(int descripteur, MsgType type, void *payload, uint32_t size);
 int recv_message(int descripteur, MsgHeader *header, void *buf, uint32_t buf_size);
 
 #endif // PROTOCOL_H
+
+

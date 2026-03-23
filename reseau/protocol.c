@@ -94,6 +94,7 @@ int recv_message(int descripteur, MsgHeader *header, void *buf, uint32_t buf_siz
         return -1;
     }
 
+    // lire le payload si présent
     if (header->length > 0) {
         if (recv_tout_message(descripteur, buf, header->length) < 0) {
             return -1;
