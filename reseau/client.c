@@ -13,14 +13,14 @@
 int main(int argc, char *argv[]) {
 
     if (argc < 3) {
-        printf("Erreur : Tu dois préciser l'ip et le port du serveur\n");
+        perror("Erreur : Tu dois préciser l'ip et le port du serveur");
         exit(1);
     }
 
     //creation socket
     int dS= socket(PF_INET, SOCK_STREAM, 0);
     if (dS<0){
-        perror("Erreur création socket client\n");
+        perror("Erreur création socket client");
         exit(1);
     }
 
@@ -35,22 +35,24 @@ int main(int argc, char *argv[]) {
 
     //demande connection
     if(connect(dS, (struct sockaddr *) &aS, lgA)<0){
-        perror("Erreur pour se connecter au serveur\n");
+        perror("Erreur pour se connecter au serveur");
         close(dS);
         exit(1);
     }
 
     //communication
-    char * m = "Bonjour";
+    char m[20];
+    printf("Entrer une commande : ");
+    scanf("%s", m);
     if(send(dS, m, strlen(m) + 1, 0)<0){
-        perror("Erreur pour envoyer message\n");
+        perror("Erreur pour envoyer message");
         close(dS);
         exit(1);
     }
 
     int r;
     if(recv(dS, &r, sizeof(int), 0)<0){
-        perror("Erreur pour recevoir message\n");
+        perror("Erreur pour recevoir message");
         close(dS);
         exit(1);
     }

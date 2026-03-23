@@ -23,7 +23,11 @@ void* routine_client(void* arg) {
     }
     printf("recu : %s\n", msg);
 
-    int r = 10;
+    int r=-1;
+    if(strcmp(msg, "salut") == 0){
+        r = 1;
+    }
+
     if(send(dSC, &r, sizeof(int), 0)<0){
         perror("Erreur pour envoyer message\n");
         close(dSC);
