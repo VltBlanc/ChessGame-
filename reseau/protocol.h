@@ -19,6 +19,7 @@ typedef enum {
     // Partie 
     REQ_MOVE            = 5,  // Client --> Serveur : coup joué 
     REP_MOVE            = 6,  // Serveur --> Client : nouvel état du plateau
+   
     REP_RESULTAT_PARTIE = 7,  // Serveur --> Client : résultat final de la partie
     REP_MOVE_ACCEPT     = 8,  // Serveur --> Client : coup accepté 
     REP_MOVE_ERREUR     = 9,  // Serveur --> Client : coup non accepté 
@@ -39,6 +40,8 @@ typedef enum {
     GAME_DRAW_REPEAT  = 5,  // Répétition 3x
     GAME_RESIGN       = 6,  // Abandon
 } GameOverPartie;
+
+
 
 // REQ_AUTH
 typedef struct {
@@ -81,6 +84,8 @@ typedef struct {
     char adversaire[32]; // nom de l'adversaire si match trouvé
     int  couleur;        // 0 = noirs, 1 = blancs
 } str_RepSearch;
+
+
 
 // HEADER : Fondamental ! il doit être rempli pour chaque requête envoyée 
 // et lu à chaque réception pour "savoir" quel type de requête on a reçu 

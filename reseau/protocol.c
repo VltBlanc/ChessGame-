@@ -55,10 +55,53 @@ int recv_tout_message(int sock, void *buf, size_t len) {
 
 //MsgType type : permettra de déterminer quel type de message ils recoivnet (req_auth, req_move etc..)
 //payload : pointeur vers les données à envoyer 
+
+//size : taille du message 
+// 
+
+
 int send_message(int descripteur, MsgType type, void *payload, uint32_t size) {
 
+    // définition du header
+    MsgHeader header;
+    header.type   = type;
+    header.length = size;
+
+    // envoyer le header
+    if (send_tout_message(descripteur, &header, sizeof(MsgHeader)) < 0) {
+        return -1;
+    }
+
+    //Vérifie des conditions sur le header
+    if (payload != NULL && size > 0) {
+        if (send_tout_message(descripteur, payload, size) < 0) {
+            return -1;
+        }
+    }
+
+    return 0;
 }
 
 int recv_message(int descripteur, MsgHeader *header, void *buf, uint32_t buf_size) {
 
+    // lire le header
+    if (recv_tout_message(descripteur, header, sizeof(MsgHeader)) < 0) {
+        return -1;
+    }
+
+    // sécurité — payload trop grand pour le buffer
+    if (header->length > buf_size) {
+        return -1;
+    }
+
+    if (header->length > 0) {
+        if (recv_tout_message(descripteur, buf, header->length) < 0) {
+            return -1;
+        }
+    }
+
+    return header->type;
 }
+
+
+//IMplémenter une fonction (switch case énorme permatnat de caractériser le type de requête et lancer la fonction en question)
