@@ -1,8 +1,12 @@
 #include "chess.h"
 #include "game.h"
 #include "util.h"
+#include "protocol.h" //ajout
 
 extern DS_ALLOCATOR allocator;
+
+static int server_socket = -1; //ajout
+static int is_my_turn = 1; //ajout
 
 static chess_state_t state = {0};
 static int checkmate_gui = 0;
@@ -175,12 +179,23 @@ void tick(float deltaTime) {
         if (state.current_player == CHESS_WHITE) {
             move_player1_fn(&state, moves.items, moves.count, &index);
         } else {
-            move_player2_fn(&state, moves.items, moves.count, &index);
+            // C'est au SERVEUR de jouer : On attend de recevoir son coup via le réseau
+            move_t remote_move;
+            // On appelle une fonction qui lit la socket TCP (doit être non-bloquante)
+            if (network_receive_move(server_socket, &remote_move) == 0) {
+                // Si on a reçu un coup, on cherche son index dans la liste des coups légaux
+                chess_move_get(moves.items, moves.count, remote_move, &index);
+            }
         }
 
         if (index != -1) {
             move_t *move = NULL;
             ds_dynamic_array_get_ref(&moves, index, (void **)&move);
+
+            if (state.current_player == CHESS_WHITE) {
+                network_send_move(server_socket, *move);
+            }
+            
             chess_apply_move(&state, *move);
 
             if (move->move == CHESS_MOVE) {
