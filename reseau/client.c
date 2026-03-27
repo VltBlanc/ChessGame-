@@ -14,7 +14,7 @@
 // pour lancer :
 // ./client IP_serveur numero_du_port
 // si serveur sur le meme pc IP=127.0.0.1
-int main(int argc, char *argv[]) {
+int lancement_client(int argc, char *argv[]) {
 
     if (argc < 3) {
         perror("Erreur : Tu dois préciser l'ip et le port du serveur");
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     //communication
     char m[20];
     printf("Entrer une commande : ");
-    scanf("%s", m);
+    scanf("%[^\n]", m);
     if(send(dS, m, strlen(m) + 1, 0)<0){
         perror("Erreur pour envoyer message");
         close(dS);
@@ -65,5 +65,10 @@ int main(int argc, char *argv[]) {
     //fermer socket
     close (dS);
 
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
+    lancement_client(argc, argv);
     return 0;
 }

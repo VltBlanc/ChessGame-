@@ -1,20 +1,14 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <sys/socket.h>   // send() et recv()
-#include <unistd.h>       // close()
-#ifndef PROTOCOL_H
-#define PROTOCOL_H
+#ifndef NETWORK_H
+#define NETWORK_H
 
-typedef enum {
-    // Authentification 
-    REQ_AUTH            = 1,  // Client --> Serveur : Demande de connexion
-    REP_AUTH            = 2,  // Serveur --> Client : Accepte ou Erreur
+#include "chess.h"
 
-    // Matchmaking 
-    REQ_SEARCH          = 3,  // Client --> Serveur : Recherche de partie 
-    REP_SEARCH          = 4,  // Serveur --> Client : Recherche en cours || erreur 
+// Initialise la connexion
+int network_connect(const char *ip, int port);
+// Envoie un coup move_t
+int network_send_move(int socket, move_t move);
+// Attend et reçoit un coup move_t du serveur
+int network_receive_move(int socket, move_t *move);
 
     // Partie 
     REQ_MOVE            = 5,  // Client --> Serveur : coup joué 

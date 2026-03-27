@@ -1,5 +1,6 @@
 #include "chess.h"
 #include "game.h"
+#include "human.h"
 #include "util.h"
 
 extern DS_ALLOCATOR allocator;
@@ -172,15 +173,12 @@ void tick(float deltaTime) {
     } else {
         int index = -1;
 
-        if (state.current_player == CHESS_WHITE) {
-            move_player1_fn(&state, moves.items, moves.count, &index);
-        } else {
-            move_player2_fn(&state, moves.items, moves.count, &index);
-        }
+        chess_move(&state, moves.items, moves.count, &index);
 
         if (index != -1) {
             move_t *move = NULL;
             ds_dynamic_array_get_ref(&moves, index, (void **)&move);
+
             chess_apply_move(&state, *move);
 
             if (move->move == CHESS_MOVE) {
