@@ -89,20 +89,23 @@ void* create_account() {
     char username[32];
     char password[32];
 
+    printf("username : ");
     scanf("%s", username); 
+    printf("password : ");
     scanf("%s", password);
 
     logique_create_account( username,password);
 }
 
 void connexion() {
-    char username2[32];
-    char password2[32];
+    char username[32];
+    char password[32];
 
-    printf("Connexion test : ");
-    scanf("%s", username2); 
-    scanf("%s", password2);
-    logique_connexion(username2,password2);
+    printf("username : ");
+    scanf("%s", username); 
+    printf("password : ");
+    scanf("%s", password);
+    logique_connexion(username,password);
     
     return 0;
 }

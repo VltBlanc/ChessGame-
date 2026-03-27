@@ -49,7 +49,7 @@ int compare_commande(char* commande, int dSC){
                 close(dSC);
             return -1;
         }
-        pthread_detach(thread_id3);
+        pthread_detach(thread_id1);
 
         return 1;
     }

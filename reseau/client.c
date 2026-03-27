@@ -8,8 +8,6 @@
 #include <arpa/inet.h> 
 
 
-#include "protocol.h"
-
 
 // pour lancer :
 // ./client IP_serveur numero_du_port
