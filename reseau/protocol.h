@@ -106,4 +106,3 @@ int recv_message(int descripteur, MsgHeader *header, void *buf, uint32_t buf_siz
 
 #endif // PROTOCOL_H
 
-
