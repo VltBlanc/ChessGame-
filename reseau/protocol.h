@@ -21,8 +21,8 @@ typedef enum {
     REP_MOVE            = 6,  // Serveur --> Client : nouvel état du plateau
    
     REP_RESULTAT_PARTIE = 7,  // Serveur --> Client : résultat final de la partie
-    REP_MOVE_ACCEPT     = 8,  // Serveur --> Client : coup accepté 
-    REP_MOVE_ERREUR     = 9,  // Serveur --> Client : coup non accepté 
+    REP_MOVE            = 8,  // Serveur --> Client : coup accepté ou refusé
+
 
 } MsgType;
 
@@ -93,6 +93,19 @@ typedef struct {
     int      type;       // MsgType
     uint32_t length;     // taille du payload en octets
 } MsgHeader;
+
+// REP_RESULTAT_PARTIE
+typedef struct{
+    char username[32];
+    int resultat; // resultat = 0 si l'utilisateur à gagner et resultat = 1 si l'utilisateur à perdu
+} str_RepResultatPartie;
+
+// REP_MOVE_ACCEPT
+typedef struct{
+    char username[32];
+    int RepMOVE ; // RepMove = 0 si le movement est accepter et RepMove si le mouvement est refuser
+} str_RepMove;
+
 
 int send_message(int descripteur, MsgType type, void *payload, uint32_t size);
 int recv_message(int descripteur, MsgHeader *header, void *buf, uint32_t buf_size);
