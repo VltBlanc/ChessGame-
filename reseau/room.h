@@ -10,12 +10,14 @@ typedef struct {
 
 int room_creer();
 
-int room_rejoindre(Room room,int socket);
+int room_rejoindre_spectateur(Room room,int socket);
 
 int room_prete(Room room);
 
 int room_message(Room room,char* message);
 
 int room_demarre(Room room);
+
+void* room_rejoindre_file(void* arg);
 
 #endif

@@ -18,25 +18,20 @@ int room_creer(){
     room.joueurs[0] = -1;
     room.joueurs[1] = -1;
     room.spectateurs[0] = -1;
-    room.nb_spectateurs = 0;
+    room.nb_spectateurs = 0; //max 10
     room.etat = 0;
     rooms[nb_rooms] = room;
     nb_rooms++;
+    printf("nouvelle room créée : %d\n", nb_rooms);
     return 0;
 }
 
-int room_rejoindre(Room room,int socket){
-    if(room.joueurs[0] == -1){
-        room.joueurs[0] = socket;
-        return 0;
-    }
-    else if(room.joueurs[1] == -1){
-        room.joueurs[1] = socket;
-        return 0;
-    }
-    else if(room.nb_spectateurs < 10){
+//surement a modif
+int room_rejoindre_spectateur(Room room,int socket){
+    if(room.nb_spectateurs < 10){
         room.spectateurs[room.nb_spectateurs] = socket;
         room.nb_spectateurs++;
+        printf("spectateur rejoint la room %d\n", nb_rooms);
         return 0;
     }
     return -1;
@@ -45,6 +40,8 @@ int room_rejoindre(Room room,int socket){
 int room_prete(Room room){
     if(room.joueurs[0] != -1 && room.joueurs[1] != -1){
         room.etat = 1;
+        printf("room %d prete\n", nb_rooms);
+        room_demarre(room);
         return 0;
     }
     return -1;
@@ -56,11 +53,44 @@ int room_message(Room room,char* message){
     return -1;
 }*/
 
+//surement a modif
 int room_demarre(Room room){
     if(room.etat == 1){
         room.etat = 2;
         //lancer le jeu?
+        printf("room %d en jeu\n", nb_rooms);
         return 0;
     }
     return -1;
+}
+
+void* room_rejoindre_file(void* arg){
+
+    // Si aucune room n'existe, en créer une
+    if (nb_rooms == 0) {
+        room_creer();
+    }
+
+    int socket = *(int*)arg; 
+    free(arg);
+
+    if (rooms[nb_rooms-1].joueurs[0] == -1){
+        rooms[nb_rooms-1].joueurs[0] = socket;   
+        printf("joueur 1 rejoint la room %d\n", nb_rooms);
+        room_prete(rooms[nb_rooms-1]);
+        pthread_exit(0);
+    }
+    else if (rooms[nb_rooms-1].joueurs[1] == -1){
+        rooms[nb_rooms-1].joueurs[1] = socket;
+        printf("joueur 2 rejoint la room %d\n", nb_rooms);
+        room_prete(rooms[nb_rooms-1]);
+        pthread_exit(0);
+    }
+    else{
+        room_creer();
+        rooms[nb_rooms-1].joueurs[0] = socket;
+        printf("joueur 1 rejoint la room %d\n", nb_rooms);
+        room_prete(rooms[nb_rooms-1]);
+        pthread_exit(0);
+    }
 }
