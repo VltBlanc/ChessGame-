@@ -40,15 +40,19 @@ void* routine_client(void* arg) {
 
 int compare_commande(char* commande){
     if(strcmp(commande, "creer compte") == 0){
+        //lance fonction (avec un thread)
         return 1;
     }
     else if(strcmp(commande, "connexion compte") == 0){
+        //lance fonction (avec un thread)
         return 2;
     }
     else if(strcmp(commande, "cherche partie") == 0){
+        //lance fonction (avec un thread)
         return 3;
     }
     else if(strcmp(commande, "historique") == 0){
+        //lance fonction (avec un thread)
         return 4;
     }
     return -1;
