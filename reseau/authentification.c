@@ -5,7 +5,7 @@
 
 
 
-int create_account( char *username, char *password) {
+int logique_create_account( char *username, char *password) {
 
 
     //Précondition : Taille des entrées 
@@ -49,7 +49,7 @@ int create_account( char *username, char *password) {
 
 
 
-int connexion( char *username, char *password) {
+int logique_connexion( char *username, char *password) {
     char ligne[1024];
     int correspondance = 0;
 
@@ -85,23 +85,24 @@ int connexion( char *username, char *password) {
 
 
 
-int main() {
+void* create_account() {
     char username[32];
     char password[32];
 
     scanf("%s", username); 
     scanf("%s", password);
 
-    create_account( username,password);
+    logique_create_account( username,password);
+}
 
-
+void connexion() {
     char username2[32];
     char password2[32];
 
     printf("Connexion test : ");
     scanf("%s", username2); 
     scanf("%s", password2);
-    connexion(username2,password2);
+    logique_connexion(username2,password2);
     
     return 0;
 }
