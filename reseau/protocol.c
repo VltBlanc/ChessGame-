@@ -1,78 +1,47 @@
-#include <stdio.h> // print, scanf etc.. 
-#include <stdlib.h> // Pour les malloc, free etc... 
-#include <string.h> // pour les manipulation des chaines caractères 
-#include <sys/socket.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <errno.h> 
+#include <unistd.h>
+#include <stdint.h> 
 
 #include "protocol.h"
-#include <sys/socket.h>
-#include <unistd.h>
 
-
-
-int send_tout_message (int descripteur, void *buf,size_t len  ) {
-    size_t envoye = 0
-    while (envoye < len ) {
-        size_t req = send( descripteur, (char*)buf + envoye, len - envoye ,0 ); // renvoie le nombre d'octets réellement enovoyé
-        envoye += req; 
+int send_tout_message(int descripteur, void *buf, size_t len) {
+    size_t envoye = 0; 
+    while (envoye < len) {
+        size_t req = send(descripteur, (char*)buf + envoye, len - envoye, 0);
     
-        if req <= 0 { // socket fermée ou erreur 
+        if (req <= 0) { 
             return -1; 
         }
+        envoye += req; 
     }
     return 0; 
 }
-
-
 
 int recv_tout_message(int sock, void *buf, size_t len) {
     size_t received = 0;
     while (received < len) {
         ssize_t n = recv(sock, (char *)buf + received, len - received, 0);
-        if (n <= 0) return -1;   // idem que fonction précédente 
+        if (n <= 0) return -1;
         received += n;
     }
     return 0;
 }
 
-
-
-
-//Dictionnaire  des messages permetant de communiquer entre le Serveur et le Client 
-//Commnet envoyer et recevoir les message
-
-//ssize_t recv(int descripteur, const void * msg, size_t lg, int flags?  )
-// ssize_t send(int descripteur, cosnt void *msg, size_t lg, int flags)
-
-
-
-//Exemple j1 veut se connecter 
-//||Créer une structure pour s'enregistrer 
-//|| envoyer cette structure au serveur 
-
-
-//MsgType type : permettra de déterminer quel type de message ils recoivnet (req_auth, req_move etc..)
-//payload : pointeur vers les données à envoyer 
-
-//size : taille du message 
-// 
-
-
 int send_message(int descripteur, MsgType type, void *payload, uint32_t size) {
-
-    // définition du header
     MsgHeader header;
     header.type   = type;
     header.length = size;
 
-    // envoyer le header
+    // Envoyer le header
     if (send_tout_message(descripteur, &header, sizeof(MsgHeader)) < 0) {
         return -1;
     }
 
-    //Vérifie des conditions sur le header
+    // Envoyer le payload si nécessaire
     if (payload != NULL && size > 0) {
         if (send_tout_message(descripteur, payload, size) < 0) {
             return -1;
@@ -83,18 +52,17 @@ int send_message(int descripteur, MsgType type, void *payload, uint32_t size) {
 }
 
 int recv_message(int descripteur, MsgHeader *header, void *buf, uint32_t buf_size) {
-
-    // lire le header
+    // Lire le header d'abord
     if (recv_tout_message(descripteur, header, sizeof(MsgHeader)) < 0) {
         return -1;
     }
 
-    // sécurité — payload trop grand pour le buffer
+    // Sécurité -> vérifier si le buffer destination est assez grand
     if (header->length > buf_size) {
         return -1;
     }
 
-    // lire le payload si présent
+    // Lire le payload si présent
     if (header->length > 0) {
         if (recv_tout_message(descripteur, buf, header->length) < 0) {
             return -1;
@@ -103,6 +71,3 @@ int recv_message(int descripteur, MsgHeader *header, void *buf, uint32_t buf_siz
 
     return header->type;
 }
-
-
-//IMplémenter une fonction (switch case énorme permatnat de caractériser le type de requête et lancer la fonction en question)

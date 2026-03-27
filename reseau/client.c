@@ -7,6 +7,10 @@
 #include <netinet/in.h>  
 #include <arpa/inet.h> 
 
+
+#include "protocol.h"
+
+
 // pour lancer :
 // ./client IP_serveur numero_du_port
 // si serveur sur le meme pc IP=127.0.0.1
@@ -18,7 +22,7 @@ int main(int argc, char *argv[]) {
     }
 
     //creation socket
-    int dS= socket(PF_INET, SOCK_STREAM, 0);
+    int dS = socket(PF_INET, SOCK_STREAM, 0);
     if (dS<0){
         perror("Erreur création socket client");
         exit(1);
