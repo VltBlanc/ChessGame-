@@ -7,6 +7,7 @@
 #include <netinet/in.h>  
 #include <arpa/inet.h>  
 #include <pthread.h>
+#include "room.h"
 
 // Fonction exécutée par chaque thread
 void* routine_client(void* arg) {
