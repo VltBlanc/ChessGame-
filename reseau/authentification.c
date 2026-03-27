@@ -97,7 +97,7 @@ void* create_account() {
     logique_create_account( username,password);
 }
 
-void connexion() {
+void* connexion() {
     char username[32];
     char password[32];
 
