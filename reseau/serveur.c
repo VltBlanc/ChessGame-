@@ -23,10 +23,7 @@ void* routine_client(void* arg) {
     }
     printf("recu : %s\n", msg);
 
-    int r=-1;
-    if(strcmp(msg, "salut") == 0){
-        r = 1;
-    }
+    int r=compare_commande(msg);
 
     if(send(dSC, &r, sizeof(int), 0)<0){
         perror("Erreur pour envoyer message\n");
@@ -41,9 +38,25 @@ void* routine_client(void* arg) {
     pthread_exit(0);
 }
 
+int compare_commande(char* commande){
+    if(strcmp(commande, "creer compte") == 0){
+        return 1;
+    }
+    else if(strcmp(commande, "connexion compte") == 0){
+        return 2;
+    }
+    else if(strcmp(commande, "cherche partie") == 0){
+        return 3;
+    }
+    else if(strcmp(commande, "historique") == 0){
+        return 4;
+    }
+    return -1;
+}
+
 // pour lancer
 // ./serveur numero_du_port
-int main(int argc, char *argv[]) {
+int lancement_serveur(int argc, char *argv[]) {
 
     if (argc < 2) {
         printf("Erreur : Tu dois préciser un port ! Exemple : %s 8080\n", argv[0]);
@@ -116,5 +129,10 @@ int main(int argc, char *argv[]) {
     //ferme socket
     close (dS);
 
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
+    lancement_serveur(argc, argv);
     return 0;
 }

@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     //communication
     char m[20];
     printf("Entrer une commande : ");
-    scanf("%s", m);
+    scanf("%[^\n]", m);
     if(send(dS, m, strlen(m) + 1, 0)<0){
         perror("Erreur pour envoyer message");
         close(dS);
