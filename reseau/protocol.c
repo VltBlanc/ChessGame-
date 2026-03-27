@@ -1,17 +1,73 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
-#include "chess.h"
+#include <errno.h> 
+#include <unistd.h>
+#include <stdint.h> 
+
 #include "protocol.h"
 
-// Envoie la structure move_t telle quelle au serveur
-int network_send_move(int fd, move_t move) {
-    return send(fd, &move, sizeof(move_t), 0);
+int send_tout_message(int descripteur, void *buf, size_t len) {
+    size_t envoye = 0; 
+    while (envoye < len) {
+        size_t req = send(descripteur, (char*)buf + envoye, len - envoye, 0);
+    
+        if (req <= 0) { 
+            return -1; 
+        }
+        envoye += req; 
+    }
+    return 0; 
 }
 
-// Reçoit la structure move_t depuis le serveur
-int network_receive_move(int fd, move_t *move) {
-    // Note: Dans un vrai jeu, il faudrait rendre cette socket 
-    // NON-BLOQUANTE pour ne pas figer l'image.
-    int n = recv(fd, move, sizeof(move_t), MSG_DONTWAIT); 
-    if (n == sizeof(move_t)) return 0; // Succès
-    return -1; // Rien reçu encore
+int recv_tout_message(int sock, void *buf, size_t len) {
+    size_t received = 0;
+    while (received < len) {
+        ssize_t n = recv(sock, (char *)buf + received, len - received, 0);
+        if (n <= 0) return -1;
+        received += n;
+    }
+    return 0;
+}
+
+int send_message(int descripteur, MsgType type, void *payload, uint32_t size) {
+    MsgHeader header;
+    header.type   = type;
+    header.length = size;
+
+    // Envoyer le header
+    if (send_tout_message(descripteur, &header, sizeof(MsgHeader)) < 0) {
+        return -1;
+    }
+
+    // Envoyer le payload si nécessaire
+    if (payload != NULL && size > 0) {
+        if (send_tout_message(descripteur, payload, size) < 0) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int recv_message(int descripteur, MsgHeader *header, void *buf, uint32_t buf_size) {
+    // Lire le header d'abord
+    if (recv_tout_message(descripteur, header, sizeof(MsgHeader)) < 0) {
+        return -1;
+    }
+
+    // Sécurité -> vérifier si le buffer destination est assez grand
+    if (header->length > buf_size) {
+        return -1;
+    }
+
+    // Lire le payload si présent
+    if (header->length > 0) {
+        if (recv_tout_message(descripteur, buf, header->length) < 0) {
+            return -1;
+        }
+    }
+
+    return header->type;
 }
