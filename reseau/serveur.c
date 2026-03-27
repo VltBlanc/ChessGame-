@@ -7,6 +7,7 @@
 #include <netinet/in.h>  
 #include <arpa/inet.h>  
 #include <pthread.h>
+#include "room.h"
 
 // Fonction exécutée par chaque thread
 void* routine_client(void* arg) {
@@ -23,7 +24,7 @@ void* routine_client(void* arg) {
     }
     printf("recu : %s\n", msg);
 
-    int r=compare_commande(msg);
+    int r=compare_commande(msg, dSC);
 
     if(send(dSC, &r, sizeof(int), 0)<0){
         perror("Erreur pour envoyer message\n");
@@ -38,17 +39,37 @@ void* routine_client(void* arg) {
     pthread_exit(0);
 }
 
-int compare_commande(char* commande){
+int compare_commande(char* commande, int dSC){
+
     if(strcmp(commande, "creer compte") == 0){
+        //lance fonction (avec un thread) authentification.h
         return 1;
     }
     else if(strcmp(commande, "connexion compte") == 0){
+        //lance fonction (avec un thread) authentification.h
         return 2;
     }
     else if(strcmp(commande, "cherche partie") == 0){
+
+        // On alloue dynamiquement pour éviter que dSC ne change avant que le thread ne le lise
+        int* joueur_ptr = malloc(sizeof(int));
+        if(joueur_ptr==NULL){
+            perror("erreur sur le malloc dans compare commande\n");
+            return -1;
+        }
+        *joueur_ptr = dSC;
+        pthread_t thread_id3;
+        if(pthread_create(&thread_id3, NULL, room_rejoindre_file, joueur_ptr)!=0){
+            perror("Erreur pour creer le pthread rejoindre file\n");
+            close(dSC);
+            return -1;
+        }
+        pthread_detach(thread_id3);
+        // Ne pas free(joueur_ptr) ici : le thread en prend possession et le libère lui-même
         return 3;
     }
     else if(strcmp(commande, "historique") == 0){
+        //lance fonction (avec un thread) historique.h
         return 4;
     }
     return -1;
