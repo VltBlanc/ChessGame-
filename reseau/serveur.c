@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include "room.h"
 #include "authentification.h"
+#include "protocol.h"
 
 // Fonction exécutée par chaque thread
 void* routine_client(void* arg) {
