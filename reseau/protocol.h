@@ -1,7 +1,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include "chess.h"
+#include "../src/chess.h"
 
 // Initialise la connexion
 int network_connect(const char *ip, int port);
@@ -10,14 +10,21 @@ int network_send_move(int socket, move_t move);
 // Attend et reçoit un coup move_t du serveur
 int network_receive_move(int socket, move_t *move);
 
+typedef enum {
+    // Authentification
+    REQ_AUTH            = 1,  // Client --> Serveur : demande authentification
+    REP_AUTH            = 2,  // Serveur --> Client : réponse authentification
+    
+    // Matchmaking
+    REQ_SEARCH          = 3,  // Client --> Serveur : chercher partie
+    REP_SEARCH          = 4,  // Serveur --> Client : réponse recherche
+    
     // Partie 
     REQ_MOVE            = 5,  // Client --> Serveur : coup joué 
-    REP_MOVE            = 6,  // Serveur --> Client : nouvel état du plateau
+    REP_MOVE            = 6,  // Serveur --> Client : nouvel état du plateau / coup adverse
    
     REP_RESULTAT_PARTIE = 7,  // Serveur --> Client : résultat final de la partie
-    REP_MOVE            = 8,  // Serveur --> Client : coup accepté ou refusé
-
-
+    REP_MOVE_ACK        = 8,  // Serveur --> Client : coup accepté ou refusé
 } MsgType;
 
 typedef enum {
@@ -36,6 +43,12 @@ typedef enum {
 } GameOverPartie;
 
 
+// HEADER : Fondamental ! il doit être rempli pour chaque requête envoyée 
+// et lu à chaque réception pour "savoir" quel type de requête on a reçu 
+typedef struct {
+    int      type;       // MsgType
+    uint32_t length;     // taille du payload en octets
+} MsgHeader;
 
 // REQ_AUTH
 typedef struct {
@@ -80,29 +93,11 @@ typedef struct {
 } str_RepSearch;
 
 
-
-// HEADER : Fondamental ! il doit être rempli pour chaque requête envoyée 
-// et lu à chaque réception pour "savoir" quel type de requête on a reçu 
-typedef struct {
-    int      type;       // MsgType
-    uint32_t length;     // taille du payload en octets
-} MsgHeader;
-
-// REP_RESULTAT_PARTIE
-typedef struct{
-    char username[32];
-    int resultat; // resultat = 0 si l'utilisateur à gagner et resultat = 1 si l'utilisateur à perdu
-} str_RepResultatPartie;
-
-// REP_MOVE_ACCEPT
-typedef struct{
-    char username[32];
-    int RepMOVE ; // RepMove = 0 si le movement est accepter et RepMove si le mouvement est refuser
-} str_RepMove;
-
+// (Les structures redondantes en bas de fichier ont été supprimées car elles causaient des conflits et on préfère passer par les structs plus complètes définies plus haut)
 
 int send_message(int descripteur, MsgType type, void *payload, uint32_t size);
 int recv_message(int descripteur, MsgHeader *header, void *buf, uint32_t buf_size);
 
 #endif // PROTOCOL_H
+
 

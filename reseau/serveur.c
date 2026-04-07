@@ -8,6 +8,8 @@
 #include <arpa/inet.h>  
 #include <pthread.h>
 #include "room.h"
+#include "authentification.h"
+#include "protocol.h"
 
 // Fonction exécutée par chaque thread
 void* routine_client(void* arg) {
@@ -42,7 +44,14 @@ void* routine_client(void* arg) {
 int compare_commande(char* commande, int dSC){
 
     if(strcmp(commande, "creer compte") == 0){
-        //lance fonction (avec un thread) authentification.h
+            pthread_t thread_id1;
+            if(pthread_create(&thread_id1, NULL, create_account, NULL)!=0){
+                perror("Erreur pour creer le pthread pour créer un compte\n");
+                close(dSC);
+            return -1;
+        }
+        pthread_detach(thread_id1);
+
         return 1;
     }
     else if(strcmp(commande, "connexion compte") == 0){

@@ -6,8 +6,6 @@
 #include <sys/socket.h>  
 #include <netinet/in.h>  
 #include <arpa/inet.h> 
-
-
 #include "protocol.h"
 
 
@@ -48,6 +46,9 @@ int lancement_client(int argc, char *argv[]) {
     char m[20];
     printf("Entrer une commande : ");
     scanf("%[^\n]", m);
+
+    //vérifier la commande avant de l'envoyer pour savoir si on doit pas faire d'autre action avant de l'envoyer!!!
+
     if(send(dS, m, strlen(m) + 1, 0)<0){
         perror("Erreur pour envoyer message");
         close(dS);

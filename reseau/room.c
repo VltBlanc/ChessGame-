@@ -57,7 +57,7 @@ int room_message(Room room,char* message){
 int room_demarre(Room room){
     if(room.etat == 1){
         room.etat = 2;
-        //lancer le jeu?
+        //lancer le jeu pour les 2 joueurs?
         printf("room %d en jeu\n", nb_rooms);
         return 0;
     }

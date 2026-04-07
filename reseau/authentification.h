@@ -1,3 +1,5 @@
+#ifndef AUTHENTIFICATION_H
+#define AUTHENTIFICATION_H
 
 
 //fonction :  créer_compte, connexion_compte, 
@@ -8,3 +10,5 @@
 
 int connexion( char *username, char *password);
 int create_account( char *username, char *password);
+
+#endif
