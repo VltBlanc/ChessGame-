@@ -10,6 +10,8 @@ int network_send_move(int socket, move_t move);
 // Attend et reçoit un coup move_t du serveur
 int network_receive_move(int socket, move_t *move);
 
+typedef enum {
+    
     // Partie 
     REQ_MOVE            = 5,  // Client --> Serveur : coup joué 
     REP_MOVE            = 6,  // Serveur --> Client : nouvel état du plateau
