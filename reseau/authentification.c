@@ -34,6 +34,10 @@ int logique_create_account( char *username, char *password) {
 
     if (existe_deja == 0) {
         FILE *op = fopen("../data/data_Joueur.csv", "a");
+        if (op == NULL) {
+            perror("Erreur ouverture fichier CSV en écriture");
+            return 0;
+        }
         fprintf(op,"%s,%s\n", username,password);
         fclose(op);
         printf("Le compte est crée ! \n ");

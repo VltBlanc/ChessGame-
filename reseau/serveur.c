@@ -43,6 +43,8 @@ void traiter_requete(int dSC, MsgHeader *header, void *payload) {
 
         printf("[creer compte] username='%s'\n", req->username);
 
+        printf("password='%s'\n", req->password);   
+        printf("username='%s'\n", req->username);   
         int ok = logique_create_account(req->username, req->password);
 
         str_RepAuth rep;
