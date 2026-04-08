@@ -64,33 +64,27 @@ int room_demarre(Room room){
     return -1;
 }
 
-void* room_rejoindre_file(void* arg){
+void room_rejoindre_file(int socket){
 
     // Si aucune room n'existe, en créer une
     if (nb_rooms == 0) {
         room_creer();
     }
 
-    int socket = *(int*)arg; 
-    free(arg);
-
     if (rooms[nb_rooms-1].joueurs[0] == -1){
         rooms[nb_rooms-1].joueurs[0] = socket;   
         printf("joueur 1 rejoint la room %d\n", nb_rooms);
         room_prete(rooms[nb_rooms-1]);
-        pthread_exit(0);
     }
     else if (rooms[nb_rooms-1].joueurs[1] == -1){
         rooms[nb_rooms-1].joueurs[1] = socket;
         printf("joueur 2 rejoint la room %d\n", nb_rooms);
         room_prete(rooms[nb_rooms-1]);
-        pthread_exit(0);
     }
     else{
         room_creer();
         rooms[nb_rooms-1].joueurs[0] = socket;
         printf("joueur 1 rejoint la room %d\n", nb_rooms);
         room_prete(rooms[nb_rooms-1]);
-        pthread_exit(0);
     }
-}
+}

@@ -82,30 +82,3 @@ int logique_connexion( char *username, char *password) {
     }
     return 1; //Réussi :
 }
-
-
-
-void* create_account() {
-    char username[32];
-    char password[32];
-
-    printf("username : ");
-    scanf("%s", username); 
-    printf("password : ");
-    scanf("%s", password);
-
-    logique_create_account( username,password);
-}
-
-void* connexion() {
-    char username[32];
-    char password[32];
-
-    printf("username : ");
-    scanf("%s", username); 
-    printf("password : ");
-    scanf("%s", password);
-    logique_connexion(username,password);
-    
-    return 0;
-}

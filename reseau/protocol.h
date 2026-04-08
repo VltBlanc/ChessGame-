@@ -25,6 +25,10 @@ typedef enum {
    
     REP_RESULTAT_PARTIE = 7,  // Serveur --> Client : résultat final de la partie
     REP_MOVE_ACK        = 8,  // Serveur --> Client : coup accepté ou refusé
+
+    // connexion
+    REQ_CONNEXION       = 9,  // Client --> Serveur : demande connexion
+    REP_CONNEXION       = 10, // Serveur --> Client : réponse connexion
 } MsgType;
 
 typedef enum {

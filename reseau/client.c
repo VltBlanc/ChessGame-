@@ -7,6 +7,8 @@
 #include <netinet/in.h>  
 #include <arpa/inet.h> 
 #include "protocol.h"
+#include "client.h"
+
 
 
 // pour lancer :
@@ -47,26 +49,50 @@ int lancement_client(int argc, char *argv[]) {
     printf("Entrer une commande : ");
     scanf("%[^\n]", m);
 
-    //vérifier la commande avant de l'envoyer pour savoir si on doit pas faire d'autre action avant de l'envoyer!!!
-
-    if(send(dS, m, strlen(m) + 1, 0)<0){
-        perror("Erreur pour envoyer message");
-        close(dS);
-        exit(1);
-    }
-
-    int r;
-    if(recv(dS, &r, sizeof(int), 0)<0){
-        perror("Erreur pour recevoir message");
-        close(dS);
-        exit(1);
-    }
-    printf("reponse : %d\n", r);
+    traiter_requete(dS, m); 
 
     //fermer socket
     close (dS);
 
     return 0;
+}
+
+void traiter_requete(int dS, char *m){
+    if(strcmp(m, "creer compte") == 0){
+        str_RequAuth req;
+        memset(&req, 0, sizeof(req));
+
+        printf("username : ");
+        scanf("%31s", req.username);
+        printf("password : ");
+        scanf("%31s", req.password);
+
+        if(send_message(dS, REQ_CONNEXION, &req, sizeof(req)) < 0){
+            perror("Erreur pour envoyer message");
+            close(dS);
+            exit(1);
+        }
+        
+        // Recevoir la réponse du serveur
+        MsgHeader header;
+        str_RepAuth rep;
+        memset(&rep, 0, sizeof(rep));
+
+        if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
+            perror("Erreur pour recevoir la réponse");
+            close(dS);
+            exit(1);
+        }
+
+        if(rep.resultat == STATUS_OK){
+            printf("Compte créé avec succès pour '%s' !\n", rep.username);
+        } else {
+            printf("Erreur : le pseudo '%s' existe déjà.\n", rep.username);
+        }   
+    }
+    else{
+        printf("Commande inconnue : %s\n", m);
+    }
 }
 
 int main(int argc, char *argv[]) {
