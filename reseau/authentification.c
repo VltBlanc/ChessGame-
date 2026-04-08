@@ -18,7 +18,7 @@ int logique_create_account( char *username, char *password) {
     int existe_deja = 0;
 
 
-    FILE *op = fopen("../data/data_Joueur.csv", "r");
+    FILE *op = fopen("data/data_Joueur.csv", "r");
     if (op != NULL) {
         while(fgets(ligne, sizeof(ligne),op) ){ //Condition d'arrêt : curseur arrive sur une ligne vide 
             
@@ -33,7 +33,7 @@ int logique_create_account( char *username, char *password) {
     }
 
     if (existe_deja == 0) {
-        FILE *op = fopen("../data/data_Joueur.csv", "a");
+        FILE *op = fopen("data/data_Joueur.csv", "a");
         if (op == NULL) {
             perror("Erreur ouverture fichier CSV en écriture");
             return 0;
@@ -59,7 +59,7 @@ int logique_connexion( char *username, char *password) {
 
 
 
-    FILE *op = fopen("../data/data_Joueur.csv", "r");
+    FILE *op = fopen("data/data_Joueur.csv", "r");
     if (op != NULL) {
         while(fgets(ligne, sizeof(ligne),op)  ){ //Condition d'arrêt : curseur arrive sur une ligne vide || username, mot de passe == pseudo_dans_csv, mtp  
             
