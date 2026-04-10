@@ -90,6 +90,38 @@ void traiter_requete(int dS, char *m){
             printf("Erreur : le pseudo '%s' existe déjà.\n", rep.username);
         }   
     }
+    else if(strcmp(m, "auth") == 0){
+        str_RequAuth req;
+        memset(&req, 0, sizeof(req));
+
+        printf("username : ");
+        scanf("%31s", req.username);
+        printf("password : ");
+        scanf("%31s", req.password);
+
+        if(send_message(dS, REQ_AUTH, &req, sizeof(req)) < 0){
+            perror("Erreur pour envoyer message");
+            close(dS);
+            exit(1);
+        }
+        
+        // Recevoir la réponse du serveur
+        MsgHeader header;
+        str_RepAuth rep;
+        memset(&rep, 0, sizeof(rep));
+
+        if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
+            perror("Erreur pour recevoir la réponse");
+            close(dS);
+            exit(1);
+        }
+
+        if(rep.resultat == STATUS_OK){
+            printf("Authentification réussie pour '%s' !\n", rep.username);
+        } else {
+            printf("Erreur : le pseudo '%s' n'existe pas ou le mot de passe est incorrect.\n", rep.username);
+        }   
+    }
     else{
         printf("Commande inconnue : %s\n", m);
     }

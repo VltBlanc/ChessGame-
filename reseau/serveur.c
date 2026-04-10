@@ -56,6 +56,24 @@ void traiter_requete(int dSC, MsgHeader *header, void *payload) {
             perror("Erreur pour envoyer REP_CONNEXION");
         }
     }
+    else if (header->type == REQ_AUTH) {
+        str_RequAuth *req = (str_RequAuth *)payload;
+
+        printf("[connexion] username='%s'\n", req->username);
+
+        printf("password='%s'\n", req->password);   
+        printf("username='%s'\n", req->username);   
+        int ok = logique_connexion(req->username, req->password);
+
+        str_RepAuth rep;
+        memset(&rep, 0, sizeof(rep));
+        rep.resultat = ok ? STATUS_OK : STATUS_ERR_AUTH;
+        strncpy(rep.username, req->username, sizeof(rep.username) - 1);
+
+        if (send_message(dSC, REP_AUTH, &rep, sizeof(rep)) < 0) {
+            perror("Erreur pour envoyer REP_AUTH");
+        }
+    }
     else if (header->type == REQ_SEARCH) {
         room_rejoindre_file(dSC);
     }
