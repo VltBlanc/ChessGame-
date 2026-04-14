@@ -7,81 +7,88 @@
 #include <netinet/in.h>  
 #include <arpa/inet.h>  
 #include <pthread.h>
-#include "room.h"
-#include "authentification.h"
-#include "protocol.h"
+#include "serveur.h"
+
 
 // Fonction exécutée par chaque thread
 void* routine_client(void* arg) {
-    int dSC = *(int*)arg; 
+    int dSC = *(int*)arg;
     free(arg);
 
-    //communication
-    char msg [20];
-    memset(msg, 0, sizeof(msg));
-    if(recv(dSC, msg, sizeof(msg)-1, 0)<0){
-        perror("Erreur pour recevoir message\n");
-        close(dSC);
-        pthread_exit(0);
-    }
-    printf("recu : %s\n", msg);
+    // Lire le header + payload via recv_message
+    MsgHeader header;
+    char buf[512];
+    memset(buf, 0, sizeof(buf));
 
-    int r=compare_commande(msg, dSC);
-
-    if(send(dSC, &r, sizeof(int), 0)<0){
-        perror("Erreur pour envoyer message\n");
+    int type = recv_message(dSC, &header, buf, sizeof(buf));
+    if (type < 0) {
+        perror("Erreur pour recevoir message");
         close(dSC);
         pthread_exit(0);
     }
 
-    //ferme socket
-    close (dSC);
+    printf("recu : type=%d, length=%u\n", header.type, header.length);
 
-    //arrete le thread
+    traiter_requete(dSC, &header, buf);
+
+    // ferme socket
+    close(dSC);
     pthread_exit(0);
 }
 
-int compare_commande(char* commande, int dSC){
+void traiter_requete(int dSC, MsgHeader *header, void *payload) {
 
-    if(strcmp(commande, "creer compte") == 0){
-            pthread_t thread_id1;
-            if(pthread_create(&thread_id1, NULL, create_account, NULL)!=0){
-                perror("Erreur pour creer le pthread pour créer un compte\n");
-                close(dSC);
-            return -1;
-        }
-        pthread_detach(thread_id1);
+    if (header->type == REQ_CONNEXION) {
+        str_RequAuth *req = (str_RequAuth *)payload;
 
-        return 1;
-    }
-    else if(strcmp(commande, "connexion compte") == 0){
-        //lance fonction (avec un thread) authentification.h
-        return 2;
-    }
-    else if(strcmp(commande, "cherche partie") == 0){
+        printf("[creer compte] username='%s'\n", req->username);
 
-        // On alloue dynamiquement pour éviter que dSC ne change avant que le thread ne le lise
-        int* joueur_ptr = malloc(sizeof(int));
-        if(joueur_ptr==NULL){
-            perror("erreur sur le malloc dans compare commande\n");
-            return -1;
+        printf("password='%s'\n", req->password);   
+        printf("username='%s'\n", req->username);   
+        int ok = logique_create_account(req->username, req->password);
+
+        str_RepAuth rep;
+        memset(&rep, 0, sizeof(rep));
+        rep.resultat = ok ? STATUS_OK : STATUS_ERR_AUTH;
+        strncpy(rep.username, req->username, sizeof(rep.username) - 1);
+
+        if (send_message(dSC, REP_CONNEXION, &rep, sizeof(rep)) < 0) {
+            perror("Erreur pour envoyer REP_CONNEXION");
         }
-        *joueur_ptr = dSC;
-        pthread_t thread_id3;
-        if(pthread_create(&thread_id3, NULL, room_rejoindre_file, joueur_ptr)!=0){
-            perror("Erreur pour creer le pthread rejoindre file\n");
-            close(dSC);
-            return -1;
+    }
+    else if (header->type == REQ_AUTH) {
+        str_RequAuth *req = (str_RequAuth *)payload;
+
+        printf("[connexion] username='%s'\n", req->username);
+
+        printf("password='%s'\n", req->password);   
+        printf("username='%s'\n", req->username);   
+        int ok = logique_connexion(req->username, req->password);
+
+        str_RepAuth rep;
+        memset(&rep, 0, sizeof(rep));
+        rep.resultat = ok ? STATUS_OK : STATUS_ERR_AUTH;
+        strncpy(rep.username, req->username, sizeof(rep.username) - 1);
+
+        if (send_message(dSC, REP_AUTH, &rep, sizeof(rep)) < 0) {
+            perror("Erreur pour envoyer REP_AUTH");
         }
-        pthread_detach(thread_id3);
-        // Ne pas free(joueur_ptr) ici : le thread en prend possession et le libère lui-même
-        return 3;
     }
-    else if(strcmp(commande, "historique") == 0){
-        //lance fonction (avec un thread) historique.h
-        return 4;
+    else if (header->type == REQ_SEARCH) {
+        int ok = room_rejoindre_file(dSC);
+
+        str_RepSearch rep;
+        memset(&rep, 0, sizeof(rep));
+        rep.resultat = ok ? STATUS_OK : STATUS_ERR_AUTH;
+        rep.couleur  = -1; // pas encore déterminé
+
+        if (send_message(dSC, REP_SEARCH, &rep, sizeof(rep)) < 0) {
+            perror("Erreur pour envoyer REP_SEARCH");
+        }
     }
-    return -1;
+    else {
+        printf("[serveur] type de requête inconnu : %d\n", header->type);
+    }
 }
 
 // pour lancer
