@@ -44,6 +44,8 @@ int lancement_client(int argc, char *argv[]) {
         exit(1);
     }
 
+    printf("commande disponible : auth, creer compte, chercher partie\n");
+
     //communication
     char m[20];
     printf("Entrer une commande : ");
@@ -120,6 +122,31 @@ void traiter_requete(int dS, char *m){
             printf("Authentification réussie pour '%s' !\n", rep.username);
         } else {
             printf("Erreur : le pseudo '%s' n'existe pas ou le mot de passe est incorrect.\n", rep.username);
+        }   
+    }
+    else if(strcmp(m, "chercher partie") == 0){
+
+        if(send_message(dS, REQ_SEARCH, NULL, 0) < 0){
+            perror("Erreur pour envoyer message");
+            close(dS);
+            exit(1);
+        }
+        
+        // Recevoir la réponse du serveur
+        MsgHeader header;
+        str_RepSearch rep;
+        memset(&rep, 0, sizeof(rep));
+
+        if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
+            perror("Erreur pour recevoir la réponse");
+            close(dS);
+            exit(1);
+        }
+
+        if(rep.resultat == STATUS_OK){
+            printf("recherche réussie !\n");
+        } else {
+            printf("Erreur : recherche échouée.\n");
         }   
     }
     else{

@@ -18,6 +18,6 @@ int room_message(Room room,char* message);
 
 int room_demarre(Room room);
 
-void room_rejoindre_file(int socket);
+int room_rejoindre_file(int socket);
 
 #endif

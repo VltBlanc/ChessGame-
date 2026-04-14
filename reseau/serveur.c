@@ -75,7 +75,16 @@ void traiter_requete(int dSC, MsgHeader *header, void *payload) {
         }
     }
     else if (header->type == REQ_SEARCH) {
-        room_rejoindre_file(dSC);
+        int ok = room_rejoindre_file(dSC);
+
+        str_RepSearch rep;
+        memset(&rep, 0, sizeof(rep));
+        rep.resultat = ok ? STATUS_OK : STATUS_ERR_AUTH;
+        rep.couleur  = -1; // pas encore déterminé
+
+        if (send_message(dSC, REP_SEARCH, &rep, sizeof(rep)) < 0) {
+            perror("Erreur pour envoyer REP_SEARCH");
+        }
     }
     else {
         printf("[serveur] type de requête inconnu : %d\n", header->type);
