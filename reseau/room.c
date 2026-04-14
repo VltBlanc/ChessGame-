@@ -12,6 +12,7 @@
 #define MAX_ROOMS 100
 Room rooms[MAX_ROOMS];
 int nb_rooms = 0;
+pthread_mutex_t mutex_rooms = PTHREAD_MUTEX_INITIALIZER;
 
 int room_creer(){
     Room room;
@@ -26,20 +27,20 @@ int room_creer(){
     return 0;
 }
 
-//surement a modif
-int room_rejoindre_spectateur(Room room,int socket){
-    if(room.nb_spectateurs < 10){
-        room.spectateurs[room.nb_spectateurs] = socket;
-        room.nb_spectateurs++;
+//surement a modif(gérer le mutex?)
+int room_rejoindre_spectateur(Room *room,int socket){
+    if(room->nb_spectateurs < 10){
+        room->spectateurs[room->nb_spectateurs] = socket;
+        room->nb_spectateurs++;
         printf("spectateur rejoint la room %d\n", nb_rooms);
         return 0;
     }
     return -1;
 }
 
-int room_prete(Room room){
-    if(room.joueurs[0] != -1 && room.joueurs[1] != -1){
-        room.etat = 1;
+int room_prete(Room *room){
+    if(room->joueurs[0] != -1 && room->joueurs[1] != -1){
+        room->etat = 1;
         printf("room %d prete\n", nb_rooms);
         room_demarre(room);
         return 0;
@@ -53,10 +54,10 @@ int room_message(Room room,char* message){
     return -1;
 }*/
 
-//surement a modif
-int room_demarre(Room room){
-    if(room.etat == 1){
-        room.etat = 2;
+//surement a modif(gérer le mutex?)
+int room_demarre(Room *room){
+    if(room->etat == 1){
+        room->etat = 2;
         //lancer le jeu pour les 2 joueurs?
         printf("room %d en jeu\n", nb_rooms);
         return 0;
@@ -65,29 +66,34 @@ int room_demarre(Room room){
 }
 
 int room_rejoindre_file(int socket){
+    pthread_mutex_lock(&mutex_rooms);
 
     // Si aucune room n'existe, en créer une
     if (nb_rooms == 0) {
         room_creer();
     }
 
+    int result = -1;
     if (rooms[nb_rooms-1].joueurs[0] == -1){
         rooms[nb_rooms-1].joueurs[0] = socket;   
         printf("joueur 1 rejoint la room %d\n", nb_rooms);
-        room_prete(rooms[nb_rooms-1]);
-        return 1;
+        room_prete(&rooms[nb_rooms-1]);
+        result = 1;
     }
     else if (rooms[nb_rooms-1].joueurs[1] == -1){
         rooms[nb_rooms-1].joueurs[1] = socket;
         printf("joueur 2 rejoint la room %d\n", nb_rooms);
-        room_prete(rooms[nb_rooms-1]);
-        return 1;
+        room_prete(&rooms[nb_rooms-1]);
+        result = 1;
     }
     else{
         room_creer();
         rooms[nb_rooms-1].joueurs[0] = socket;
         printf("joueur 1 rejoint la room %d\n", nb_rooms);
-        room_prete(rooms[nb_rooms-1]);
-        return 1;
+        room_prete(&rooms[nb_rooms-1]);
+        result = 1;
     }
-}
+
+    pthread_mutex_unlock(&mutex_rooms);
+    return result;
+}
