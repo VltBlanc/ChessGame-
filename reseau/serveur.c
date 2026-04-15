@@ -7,7 +7,27 @@
 #include <netinet/in.h>  
 #include <arpa/inet.h>  
 #include <pthread.h>
+#include <signal.h>
 #include "serveur.h"
+
+// Socket serveur globale pour le nettoyage lors d'un signal
+static volatile int g_dS = -1;
+
+// Gestionnaire de signal pour fermeture propre (Ctrl+C, kill, etc.)
+// Note : exit() ferme automatiquement toutes les sockets clients ouvertes
+void handler_signal(int sig) {
+    const char msg[] = "\n[serveur] Signal recu, fermeture propre...\n";
+    write(STDOUT_FILENO, msg, sizeof(msg) - 1);
+
+    // Fermer la socket serveur pour débloquer accept()
+    if (g_dS != -1) {
+        close(g_dS);
+        g_dS = -1;
+    }
+
+    // exit() fermera les sockets clients automatiquement
+    _exit(0);
+}
 
 
 // Fonction exécutée par chaque thread
@@ -132,12 +152,26 @@ int lancement_serveur(int argc, char *argv[]) {
         printf("Erreur : Tu dois préciser un port ! Exemple : %s 8080\n", argv[0]);
         exit(1);
     }
+
+    // Enregistrement des gestionnaires de signaux
+    struct sigaction sa;
+    sa.sa_handler = handler_signal;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);   // Ctrl+C
+    sigaction(SIGTERM, &sa, NULL);  // kill
+
     //creation socket
     int dS= socket(PF_INET, SOCK_STREAM, 0);
     if (dS<0){
         perror("Erreur création socket serveur\n");
         exit(1);
     }
+    g_dS = dS; // sauvegarder pour le handler de signal
+
+    // Permet de réutiliser le port immédiatement après un arrêt
+    int opt = 1;
+    setsockopt(dS, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     //on va utiliser IPV4
     struct sockaddr_in ad;

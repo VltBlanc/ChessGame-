@@ -6,8 +6,25 @@
 #include <sys/socket.h>  
 #include <netinet/in.h>  
 #include <arpa/inet.h> 
+#include <signal.h>
 #include "protocol.h"
 #include "client.h"
+
+// Socket client globale pour le nettoyage lors d'un signal
+static volatile int g_dS_client = -1;
+
+// Gestionnaire de signal pour fermeture propre (Ctrl+C, kill, etc.)
+void handler_signal_client(int sig) {
+    printf("\n[client] Signal %d reçu, fermeture propre...\n", sig);
+
+    if (g_dS_client != -1) {
+        close(g_dS_client);
+        g_dS_client = -1;
+    }
+
+    printf("[client] Socket fermée, arrêt.\n");
+    exit(0);
+}
 
 
 
@@ -21,12 +38,21 @@ int lancement_client(int argc, char *argv[]) {
         exit(1);
     }
 
+    // Enregistrement des gestionnaires de signaux
+    struct sigaction sa;
+    sa.sa_handler = handler_signal_client;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);   // Ctrl+C
+    sigaction(SIGTERM, &sa, NULL);  // kill
+
     //creation socket
     int dS = socket(PF_INET, SOCK_STREAM, 0);
     if (dS<0){
         perror("Erreur création socket client");
         exit(1);
     }
+    g_dS_client = dS; // sauvegarder pour le handler de signal
 
     //on va utiliser IPV4
     struct sockaddr_in aS;
