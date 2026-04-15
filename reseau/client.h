@@ -9,8 +9,11 @@
 // Retourne 0 si tout s'est bien passé.
 int lancement_client(int argc, char *argv[]);
 
-// Traite une requête reçue du client selon son type (MsgHeader).
-// Envoie la réponse appropriée sur dSC.
-void traiter_requete(int dS, char *m);
+// Traite les requêtes d'authentification et de création de compte.
+// Retourne STATUS_OK (0) ou STATUS_ERR_AUTH (-1).
+int traiter_requete_debut(int dS, char *m);
+
+// Traite les requêtes de jeu (ex: recherche de partie).
+int traiter_requete_jeu(int dS, char *m);
 
 #endif // CLIENT_H

@@ -44,14 +44,29 @@ int lancement_client(int argc, char *argv[]) {
         exit(1);
     }
 
-    printf("commande disponible : auth, creer compte, chercher partie\n");
-
     //communication
     char m[20];
-    printf("Entrer une commande : ");
-    scanf("%[^\n]", m);
 
-    traiter_requete(dS, m); 
+    //login=1 quand le auth est reussi
+    int login = -1;
+    while(login != 1){
+        memset(m, 0, sizeof(m));
+        printf("commande disponible : auth, creer compte\n");
+
+        printf("Entrer une commande : ");
+        fgets(m, sizeof(m), stdin);
+        m[strcspn(m, "\n")] = '\0'; // retirer le \n
+
+        login = traiter_requete_debut(dS, m); 
+    }
+
+    memset(m, 0, sizeof(m));
+    printf("commande disponible : chercher partie\n");
+    printf("Entrer une commande : ");
+    fgets(m, sizeof(m), stdin);
+    m[strcspn(m, "\n")] = '\0';
+
+    traiter_requete_jeu(dS, m); 
 
     //fermer socket
     close (dS);
@@ -59,7 +74,7 @@ int lancement_client(int argc, char *argv[]) {
     return 0;
 }
 
-void traiter_requete(int dS, char *m){
+int traiter_requete_debut(int dS, char *m){
     if(strcmp(m, "creer compte") == 0){
         str_RequAuth req;
         memset(&req, 0, sizeof(req));
@@ -68,11 +83,12 @@ void traiter_requete(int dS, char *m){
         scanf("%31s", req.username);
         printf("password : ");
         scanf("%31s", req.password);
+        int c; while ((c = getchar()) != '\n' && c != EOF); // vider le buffer
 
         if(send_message(dS, REQ_CONNEXION, &req, sizeof(req)) < 0){
             perror("Erreur pour envoyer message");
             close(dS);
-            exit(1);
+            return -1;
         }
         
         // Recevoir la réponse du serveur
@@ -83,13 +99,15 @@ void traiter_requete(int dS, char *m){
         if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
             perror("Erreur pour recevoir la réponse");
             close(dS);
-            exit(1);
+            return -1;
         }
 
         if(rep.resultat == STATUS_OK){
             printf("Compte créé avec succès pour '%s' !\n", rep.username);
+            return 0;
         } else {
             printf("Erreur : le pseudo '%s' existe déjà.\n", rep.username);
+            return -1;
         }   
     }
     else if(strcmp(m, "auth") == 0){
@@ -100,11 +118,12 @@ void traiter_requete(int dS, char *m){
         scanf("%31s", req.username);
         printf("password : ");
         scanf("%31s", req.password);
+        int c; while ((c = getchar()) != '\n' && c != EOF); // vider le buffer
 
         if(send_message(dS, REQ_AUTH, &req, sizeof(req)) < 0){
             perror("Erreur pour envoyer message");
             close(dS);
-            exit(1);
+            return -1;
         }
         
         // Recevoir la réponse du serveur
@@ -115,21 +134,30 @@ void traiter_requete(int dS, char *m){
         if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
             perror("Erreur pour recevoir la réponse");
             close(dS);
-            exit(1);
+            return -1;
         }
 
         if(rep.resultat == STATUS_OK){
             printf("Authentification réussie pour '%s' !\n", rep.username);
+            return 1;
         } else {
             printf("Erreur : le pseudo '%s' n'existe pas ou le mot de passe est incorrect.\n", rep.username);
+            return -1;
         }   
     }
-    else if(strcmp(m, "chercher partie") == 0){
+    else{
+        printf("Commande inconnue : %s\n", m);
+        return -1;   
+    }
+}
+
+int traiter_requete_jeu(int dS, char *m){
+    if(strcmp(m, "chercher partie") == 0){
 
         if(send_message(dS, REQ_SEARCH, NULL, 0) < 0){
             perror("Erreur pour envoyer message");
             close(dS);
-            exit(1);
+            return -1;
         }
         
         // Recevoir la réponse du serveur
@@ -140,17 +168,20 @@ void traiter_requete(int dS, char *m){
         if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
             perror("Erreur pour recevoir la réponse");
             close(dS);
-            exit(1);
+            return -1;
         }
 
         if(rep.resultat == STATUS_OK){
             printf("recherche réussie !\n");
+            return 0;
         } else {
             printf("Erreur : recherche échouée.\n");
+            return -1;
         }   
     }
     else{
         printf("Commande inconnue : %s\n", m);
+        return -1;
     }
 }
 

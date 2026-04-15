@@ -16,8 +16,11 @@ int lancement_serveur(int argc, char *argv[]);
 // Fonction exécutée par chaque thread client (prend un int* vers le descripteur socket).
 void* routine_client(void* arg);
 
-// Traite une requête reçue du client selon son type (MsgHeader).
-// Envoie la réponse appropriée sur dSC.
-void traiter_requete(int dSC, MsgHeader *header, void *payload);
+// Traite les requêtes d'authentification et de création de compte.
+// Retourne STATUS_OK (0) ou STATUS_ERR_AUTH (-1).
+int traiter_requete_debut(int dSC, MsgHeader *header, void *payload);
+
+// Traite les requêtes de jeu (ex: recherche de partie).
+int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload);
 
 #endif // SERVEUR_H

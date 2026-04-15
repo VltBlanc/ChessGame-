@@ -20,6 +20,20 @@ void* routine_client(void* arg) {
     char buf[512];
     memset(buf, 0, sizeof(buf));
 
+    int login=-1;
+    while (login !=5){
+        int type = recv_message(dSC, &header, buf, sizeof(buf));
+        if (type < 0) {
+            perror("Erreur pour recevoir message");
+            close(dSC);
+            pthread_exit(0);
+        }
+
+        printf("recu : type=%d, length=%u\n", header.type, header.length);
+
+        login = traiter_requete_debut(dSC, &header, buf);
+    }
+
     int type = recv_message(dSC, &header, buf, sizeof(buf));
     if (type < 0) {
         perror("Erreur pour recevoir message");
@@ -29,15 +43,16 @@ void* routine_client(void* arg) {
 
     printf("recu : type=%d, length=%u\n", header.type, header.length);
 
-    traiter_requete(dSC, &header, buf);
+    traiter_requete_jeu(dSC, &header, buf);
 
     // ferme socket
     close(dSC);
     pthread_exit(0);
 }
 
-void traiter_requete(int dSC, MsgHeader *header, void *payload) {
+int traiter_requete_debut(int dSC, MsgHeader *header, void *payload) {
 
+    //creer compte
     if (header->type == REQ_CONNEXION) {
         str_RequAuth *req = (str_RequAuth *)payload;
 
@@ -54,8 +69,12 @@ void traiter_requete(int dSC, MsgHeader *header, void *payload) {
 
         if (send_message(dSC, REP_CONNEXION, &rep, sizeof(rep)) < 0) {
             perror("Erreur pour envoyer REP_CONNEXION");
+            return -1;
         }
+        return ok ? STATUS_OK : STATUS_ERR_AUTH;
     }
+
+    //connexion
     else if (header->type == REQ_AUTH) {
         str_RequAuth *req = (str_RequAuth *)payload;
 
@@ -72,9 +91,20 @@ void traiter_requete(int dSC, MsgHeader *header, void *payload) {
 
         if (send_message(dSC, REP_AUTH, &rep, sizeof(rep)) < 0) {
             perror("Erreur pour envoyer REP_AUTH");
+            return -1;
         }
+        return ok ? 5 : STATUS_ERR_AUTH;
     }
-    else if (header->type == REQ_SEARCH) {
+    else {
+        printf("[serveur] type de requête inconnu : %d\n", header->type);
+        return -1;
+    }
+}
+
+int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload) {
+    
+    //chercher partie
+    if (header->type == REQ_SEARCH) {
         int ok = room_rejoindre_file(dSC);
 
         str_RepSearch rep;
@@ -84,10 +114,13 @@ void traiter_requete(int dSC, MsgHeader *header, void *payload) {
 
         if (send_message(dSC, REP_SEARCH, &rep, sizeof(rep)) < 0) {
             perror("Erreur pour envoyer REP_SEARCH");
+            return -1;
         }
+        return ok ? STATUS_OK : STATUS_ERR_AUTH;
     }
     else {
         printf("[serveur] type de requête inconnu : %d\n", header->type);
+        return -1;
     }
 }
 
