@@ -92,7 +92,10 @@ int lancement_client(int argc, char *argv[]) {
     fgets(m, sizeof(m), stdin);
     m[strcspn(m, "\n")] = '\0';
 
-    traiter_requete_jeu(dS, m); 
+    int couleur = traiter_requete_jeu(dS, m); 
+    if (couleur >= 0) {
+        client_boucle_jeu(dS, couleur);
+    }
 
     //fermer socket
     close (dS);
@@ -198,8 +201,8 @@ int traiter_requete_jeu(int dS, char *m){
         }
 
         if(rep.resultat == STATUS_OK){
-            printf("recherche réussie !\n");
-            return 0;
+            printf("recherche réussie ! Vous jouez les %s.\n", rep.couleur == 1 ? "BLANCS" : "NOIRS");
+            return rep.couleur; // on retourne la couleur pour la boucle de jeu
         } else {
             printf("Erreur : recherche échouée.\n");
             return -1;
@@ -208,6 +211,87 @@ int traiter_requete_jeu(int dS, char *m){
     else{
         printf("Commande inconnue : %s\n", m);
         return -1;
+    }
+}
+
+//a relire
+void client_boucle_jeu(int dS, int ma_couleur) {
+    int trait = 1; // 1 = blanc, 0 = noir (les blancs commencent)
+    MsgHeader header;
+    char buf[512];
+
+    printf("\n--- DÉBUT DE LA PARTIE ---\n");
+
+    while (1) {
+        if (trait == ma_couleur) {
+            // --- C'EST NOTRE TOUR ---
+            printf("\nÀ vous de jouer ! Entrez un coup (ex: e2e4) ou 'quit' : ");
+            char coup[20];
+            memset(coup, 0, sizeof(coup));
+            fgets(coup, sizeof(coup), stdin);
+            coup[strcspn(coup, "\n")] = '\0';
+
+            if (strcmp(coup, "quit") == 0) {
+                printf("Vous avez quitté la partie.\n");
+                break;
+            }
+
+            // Simplification temporaire du parsage (ex : 1,2 vers 3,4 au lieu de format d'echecs e2e4 pour le moment)
+            // L'idéal est de brancher cela avec ta librairie 'chess.c'.
+            // On hardcode juste l'envoi pour l'architecture réseau ici:
+            str_ReqMove req;
+            memset(&req, 0, sizeof(req));
+            if (strlen(coup) >= 4) {
+                 req.dep_col = coup[0] - 'a';
+                 req.dep_ligne = coup[1] - '1';
+                 req.vers_col = coup[2] - 'a';
+                 req.vers_ligne = coup[3] - '1';
+            }
+
+            if (send_message(dS, REQ_MOVE, &req, sizeof(req)) < 0) {
+                perror("Erreur envoi coup");
+                break;
+            }
+
+            // Attendre la réponse du serveur (ACK)
+            int type = recv_message(dS, &header, buf, sizeof(buf));
+            if (type <= 0) {
+                printf("Déconnecté du serveur.\n");
+                break;
+            }
+
+            if (header.type == REP_MOVE_ACK) {
+                str_RepMove *rep = (str_RepMove *)buf;
+                if (rep->resultat == STATUS_OK) {
+                    printf("Coup accepté par le serveur.\n");
+                    trait = (trait == 1) ? 0 : 1; // On passe la main
+                } else {
+                    printf("Coup refusé (invalide ou pas ton tour), réessayez.\n");
+                }
+            } else {
+                printf("Réponse inattendue au lieu de ACK: %d\n", header.type);
+            }
+        } 
+        else {
+            // --- TOUR DE L'ADVERSAIRE ---
+            printf("\nEn attente du coup de l'adversaire...\n");
+
+            int type = recv_message(dS, &header, buf, sizeof(buf));
+            if (type <= 0) {
+                printf("Déconnecté du serveur.\n");
+                break;
+            }
+
+            if (header.type == REP_MOVE) {
+                str_RepMove *rep = (str_RepMove *)buf;
+                printf("L'adversaire a joué : de (%d,%d) vers (%d,%d)\n", 
+                        rep->plateau[0], rep->plateau[1], rep->plateau[2], rep->plateau[3]);
+                
+                trait = ma_couleur; // C'est de nouveau à nous
+            } else {
+                 printf("Message inattendu : %d\n", header.type);
+            }
+        }
     }
 }
 

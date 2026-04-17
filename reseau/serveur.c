@@ -125,18 +125,31 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload) {
     
     //chercher partie
     if (header->type == REQ_SEARCH) {
-        int ok = room_rejoindre_file(dSC);
+        printf("[serveur] REQ_SEARCH reçu, mise en file d'attente...\n");
+
+        // Bloque ici tant que les 2 joueurs ne sont pas réunis
+        int room_idx = room_rejoindre_file(dSC);
+
+        // On arrive ici SEULEMENT quand les 2 joueurs sont dans la room
+        Room *room = &rooms[room_idx];
+        int couleur = (room->joueurs[0] == dSC) ? 1 : 0; // 1=blanc, 0=noir
 
         str_RepSearch rep;
         memset(&rep, 0, sizeof(rep));
-        rep.resultat = ok ? STATUS_OK : STATUS_ERR_AUTH;
-        rep.couleur  = -1; // pas encore déterminé
+        rep.resultat = STATUS_OK;
+        rep.couleur  = couleur;
 
         if (send_message(dSC, REP_SEARCH, &rep, sizeof(rep)) < 0) {
             perror("Erreur pour envoyer REP_SEARCH");
-            return -1;
+            close(dSC);
+            pthread_exit(0);
         }
-        return ok ? STATUS_OK : STATUS_ERR_AUTH;
+
+        printf("[serveur] Match trouvé ! room=%d, couleur=%s\n",
+               room_idx, couleur ? "blanc" : "noir");
+
+        // Phase 3 : Boucle de jeu — relayer les coups
+        room_boucle_jeu(room, dSC, couleur);
     }
     else {
         printf("[serveur] type de requête inconnu : %d\n", header->type);
