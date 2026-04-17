@@ -1127,7 +1127,7 @@ DSHDEF ds_result ds_dynamic_array_get_ref(ds_dynamic_array *da,
     ds_result result = DS_OK;
 
     if (index >= da->count) {
-        DS_LOG_ERROR("Index out of bounds %d %d", index, da->count);
+        DS_LOG_ERROR("Index out of bounds %d %d", (int)index, (int)da->count);
         return_defer(DS_ERR);
     }
 

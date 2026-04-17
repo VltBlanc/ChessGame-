@@ -2,6 +2,7 @@
 #define NETWORK_H
 
 #include "../src/chess.h"
+#include <stdint.h>
 
 // Initialise la connexion
 int network_connect(const char *ip, int port);

@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>       
 #include <stdlib.h>      
 #include <string.h>      
@@ -16,6 +17,7 @@ static volatile int g_dS = -1;
 // Gestionnaire de signal pour fermeture propre (Ctrl+C, kill, etc.)
 // Note : exit() ferme automatiquement toutes les sockets clients ouvertes
 void handler_signal(int sig) {
+    (void)sig;
     const char msg[] = "\n[serveur] Signal recu, fermeture propre...\n";
     write(STDOUT_FILENO, msg, sizeof(msg) - 1);
 
@@ -122,6 +124,7 @@ int traiter_requete_debut(int dSC, MsgHeader *header, void *payload) {
 }
 
 int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload) {
+    (void)payload;
     
     //chercher partie
     if (header->type == REQ_SEARCH) {
@@ -150,6 +153,7 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload) {
 
         // Phase 3 : Boucle de jeu — relayer les coups
         room_boucle_jeu(room, dSC, couleur);
+        return 0;
     }
     else {
         printf("[serveur] type de requête inconnu : %d\n", header->type);

@@ -95,6 +95,7 @@ int room_rejoindre_file(int socket){
 }
 
 void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur) {
+    (void)ma_couleur;
     MsgHeader header;
     char buf[512];
 

@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>       
 #include <stdlib.h>      
 #include <string.h>      
@@ -9,6 +10,7 @@
 #include <signal.h>
 #include "protocol.h"
 #include "client.h"
+#include "../src/game.h"
 
 // Socket client globale pour le nettoyage lors d'un signal
 static volatile int g_dS_client = -1;
@@ -94,7 +96,7 @@ int lancement_client(int argc, char *argv[]) {
 
     int couleur = traiter_requete_jeu(dS, m); 
     if (couleur >= 0) {
-        client_boucle_jeu(dS, couleur);
+        game_network_play(dS, couleur);
     }
 
     //fermer socket
@@ -214,101 +216,7 @@ int traiter_requete_jeu(int dS, char *m){
     }
 }
 
-void client_boucle_jeu(int dS, int ma_couleur) {
-    int trait = 1; // 1 = blanc, 0 = noir (les blancs commencent)
-    MsgHeader header;
-    char buf[512];
 
-    printf("\n--- DÉBUT DE LA PARTIE ---\n");
-
-    while (1) {
-        if (trait == ma_couleur) {
-            // --- C'EST NOTRE TOUR ---
-            printf("\nÀ vous de jouer ! Entrez un coup (ex: e2e4) ou 'quit' : ");
-            char coup[20];
-            memset(coup, 0, sizeof(coup));
-            fgets(coup, sizeof(coup), stdin);
-            coup[strcspn(coup, "\n")] = '\0';
-
-            if (strcmp(coup, "quit") == 0) {
-                printf("Vous avez quitté la partie.\n");
-                break;
-            }
-
-            // Simplification temporaire du parsage (ex : 1,2 vers 3,4 au lieu de format d'echecs e2e4 pour le moment)
-            // L'idéal est de brancher cela avec ta librairie 'chess.c'.
-            // On hardcode juste l'envoi pour l'architecture réseau ici:
-            str_ReqMove req;
-            memset(&req, 0, sizeof(req));
-            if (strlen(coup) >= 4) {
-                 req.dep_col = coup[0] - 'a';
-                 req.dep_ligne = coup[1] - '1';
-                 req.vers_col = coup[2] - 'a';
-                 req.vers_ligne = coup[3] - '1';
-            }
-
-            if (send_message(dS, REQ_MOVE, &req, sizeof(req)) < 0) {
-                perror("Erreur envoi coup");
-                break;
-            }
-
-            // Attendre la réponse du serveur (ACK)
-            int type = recv_message(dS, &header, buf, sizeof(buf));
-            if (type <= 0) {
-                printf("Déconnecté du serveur.\n");
-                break;
-            }
-
-            if (header.type == REP_MOVE_ACK) {
-                str_RepMove *rep = (str_RepMove *)buf;
-                if (rep->resultat == STATUS_OK) {
-                    printf("Coup accepté par le serveur.\n");
-                    trait = (trait == 1) ? 0 : 1; // On passe la main
-                } else {
-                    printf("Coup refusé (invalide ou pas ton tour), réessayez.\n");
-                }
-            } else if (header.type == REP_RESULTAT_PARTIE) {
-                str_RepResultatPartie *rep = (str_RepResultatPartie *)buf;
-                if (rep->raison == GAME_RESIGN) {
-                    printf("\nL'adversaire a quitté la partie. Vous avez gagné par abandon.\n");
-                } else {
-                    printf("\nLa partie est terminée.\n");
-                }
-                break;
-            } else {
-                printf("Réponse inattendue au lieu de ACK: %d\n", header.type);
-            }
-        } 
-        else {
-            // --- TOUR DE L'ADVERSAIRE ---
-            printf("\nEn attente du coup de l'adversaire...\n");
-
-            int type = recv_message(dS, &header, buf, sizeof(buf));
-            if (type <= 0) {
-                printf("Déconnecté du serveur.\n");
-                break;
-            }
-
-            if (header.type == REP_MOVE) {
-                str_RepMove *rep = (str_RepMove *)buf;
-                printf("L'adversaire a joué : de (%d,%d) vers (%d,%d)\n", 
-                        rep->plateau[0], rep->plateau[1], rep->plateau[2], rep->plateau[3]);
-                
-                trait = ma_couleur; // C'est de nouveau à nous
-            } else if (header.type == REP_RESULTAT_PARTIE) {
-                str_RepResultatPartie *rep = (str_RepResultatPartie *)buf;
-                if (rep->raison == GAME_RESIGN) {
-                    printf("\nL'adversaire a quitté la partie. Vous avez gagné par abandon.\n");
-                } else {
-                    printf("\nLa partie est terminée.\n");
-                }
-                break;
-            } else {
-                 printf("Message inattendu : %d\n", header.type);
-            }
-        }
-    }
-}
 
 int main(int argc, char *argv[]) {
     lancement_client(argc, argv);
