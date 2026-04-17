@@ -103,6 +103,19 @@ void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur) {
         int type = recv_message(mon_socket, &header, buf, sizeof(buf));
         if (type < 0) {
             printf("[room] déconnexion d'un joueur\n");
+            
+            if(room->etat == 2) {
+                int mon_index = (room->joueurs[0] == mon_socket) ? 0 : 1;
+                int adversaire = room->joueurs[mon_index == 0 ? 1 : 0];
+                
+                if (adversaire != -1) {
+                    str_RepResultatPartie rep;
+                    memset(&rep, 0, sizeof(rep));
+                    rep.raison = GAME_RESIGN;
+                    rep.gagnant = mon_index == 0 ? 0 : 1; // 0=noir, 1=blanc
+                    send_message(adversaire, REP_RESULTAT_PARTIE, &rep, sizeof(rep));
+                }
+            }
             room->etat = 3; // TERMINEE
             break;
         }

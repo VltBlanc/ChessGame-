@@ -11,12 +11,12 @@ int lancement_client(int argc, char *argv[]);
 
 // Traite les requêtes d'authentification et de création de compte.
 // Retourne STATUS_OK (0) ou STATUS_ERR_AUTH (-1).
-int traiter_requete_debut(int dS, MsgHeader *header, void *payload);
+int traiter_requete_debut(int dS, char *m);
 
 // Traite les requêtes de jeu (ex: recherche de partie).
-int traiter_requete_jeu(int dS, MsgHeader *header, void *payload);
+int traiter_requete_jeu(int dS, char *m);
 
-// Boucle principale de jeu côté client
+// Boucle principale de jeu côté client 
 void client_boucle_jeu(int dS, int ma_couleur);
 
 #endif // CLIENT_H

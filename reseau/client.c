@@ -214,7 +214,6 @@ int traiter_requete_jeu(int dS, char *m){
     }
 }
 
-//a relire
 void client_boucle_jeu(int dS, int ma_couleur) {
     int trait = 1; // 1 = blanc, 0 = noir (les blancs commencent)
     MsgHeader header;
@@ -268,6 +267,14 @@ void client_boucle_jeu(int dS, int ma_couleur) {
                 } else {
                     printf("Coup refusé (invalide ou pas ton tour), réessayez.\n");
                 }
+            } else if (header.type == REP_RESULTAT_PARTIE) {
+                str_RepResultatPartie *rep = (str_RepResultatPartie *)buf;
+                if (rep->raison == GAME_RESIGN) {
+                    printf("\nL'adversaire a quitté la partie. Vous avez gagné par abandon.\n");
+                } else {
+                    printf("\nLa partie est terminée.\n");
+                }
+                break;
             } else {
                 printf("Réponse inattendue au lieu de ACK: %d\n", header.type);
             }
@@ -288,6 +295,14 @@ void client_boucle_jeu(int dS, int ma_couleur) {
                         rep->plateau[0], rep->plateau[1], rep->plateau[2], rep->plateau[3]);
                 
                 trait = ma_couleur; // C'est de nouveau à nous
+            } else if (header.type == REP_RESULTAT_PARTIE) {
+                str_RepResultatPartie *rep = (str_RepResultatPartie *)buf;
+                if (rep->raison == GAME_RESIGN) {
+                    printf("\nL'adversaire a quitté la partie. Vous avez gagné par abandon.\n");
+                } else {
+                    printf("\nLa partie est terminée.\n");
+                }
+                break;
             } else {
                  printf("Message inattendu : %d\n", header.type);
             }
