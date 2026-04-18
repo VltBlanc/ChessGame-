@@ -60,7 +60,7 @@ message * recevoir_chat(int socket , int room_id){
     }
     return msg_reçu;
 }
-// !!! petit problème pour le moment : le joueur reçoie le msg de lui même !!! ( une premier idée c'est de le gerer chez le joueur ( igorer le msg de lui même )
+
 void diffuser_msg_room(Room * distination , message * msg,int socket_emetteur){
     if (distination == NULL || msg == NULL){return;} // gestion d'erreur
     // envoyer au joueur
@@ -76,4 +76,16 @@ void diffuser_msg_room(Room * distination , message * msg,int socket_emetteur){
             send(distination->spectateurs[i], msg, sizeof(message), MSG_DONTWAIT);
         }
     }
+}
+
+void afficher_message(message *msg) {
+    if (msg == NULL) return;
+
+    printf("[%02d:%02d] %s : %s\n",
+           msg->momentenv.heure,
+           msg->momentenv.minute,
+           msg->username,
+           msg->msg);
+
+    fflush(stdout);
 }
