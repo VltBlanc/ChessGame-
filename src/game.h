@@ -17,4 +17,7 @@ void state_init(char *fen);
 
 void tick(float deltaTime);
 
+// Boucle de jeu pour le mode réseau
+void game_network_play(int dS, int my_color);
+
 #endif // GAME_H

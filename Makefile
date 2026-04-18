@@ -25,7 +25,7 @@ endif
 
 .PHONY: all clean
 
-all: $(OUT)/main
+all: $(OUT)/main $(OUT)/client $(OUT)/serveur
 
 $(OUT):
 	mkdir -p $(OUT)
@@ -52,8 +52,22 @@ $(OUT)/ds.o: $(SRC)/ds.c $(SRC)/ds.h | $(OUT)
 $(OUT)/human.o: $(SRC)/human.c $(SRC)/human.h $(SRC)/chess.h $(SRC)/util.h | $(OUT)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(OUT)/client: reseau/client.c reseau/protocol.c $(OUT)/game.o $(OUT)/human.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o | $(OUT)
+	$(CC) $(CFLAGS) -I./src $^ -o $@ $(LDLIBS)
+
+$(OUT)/serveur: reseau/serveur.c reseau/room.c reseau/authentification.c reseau/protocol.c | $(OUT)
+	$(CC) $(CFLAGS) $^ -o $@ -lpthread
+
 clean:
 	rm -rf $(OUT)
 
+local :
+	$(OUT)/main
+
 run :
-	./dist/main game
+	./dist/main
+
+client: $(OUT)/client
+
+serveur: $(OUT)/serveur
+

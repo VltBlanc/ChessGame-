@@ -16,4 +16,7 @@ int traiter_requete_debut(int dS, char *m);
 // Traite les requêtes de jeu (ex: recherche de partie).
 int traiter_requete_jeu(int dS, char *m);
 
+// Boucle principale de jeu côté client 
+void client_boucle_jeu(int dS, int ma_couleur);
+
 #endif // CLIENT_H

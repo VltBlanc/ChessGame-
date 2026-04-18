@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>       
 #include <stdlib.h>      
 #include <string.h>      
@@ -9,6 +10,7 @@
 #include <signal.h>
 #include "protocol.h"
 #include "client.h"
+#include "../src/game.h"
 
 // Socket client globale pour le nettoyage lors d'un signal
 static volatile int g_dS_client = -1;
@@ -92,7 +94,10 @@ int lancement_client(int argc, char *argv[]) {
     fgets(m, sizeof(m), stdin);
     m[strcspn(m, "\n")] = '\0';
 
-    traiter_requete_jeu(dS, m); 
+    int couleur = traiter_requete_jeu(dS, m); 
+    if (couleur >= 0) {
+        game_network_play(dS, couleur);
+    }
 
     //fermer socket
     close (dS);
@@ -198,8 +203,8 @@ int traiter_requete_jeu(int dS, char *m){
         }
 
         if(rep.resultat == STATUS_OK){
-            printf("recherche réussie !\n");
-            return 0;
+            printf("recherche réussie ! Vous jouez les %s.\n", rep.couleur == 1 ? "BLANCS" : "NOIRS");
+            return rep.couleur; // on retourne la couleur pour la boucle de jeu
         } else {
             printf("Erreur : recherche échouée.\n");
             return -1;
@@ -210,6 +215,8 @@ int traiter_requete_jeu(int dS, char *m){
         return -1;
     }
 }
+
+
 
 int main(int argc, char *argv[]) {
     lancement_client(argc, argv);
