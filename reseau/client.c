@@ -6,7 +6,26 @@
 #include <sys/socket.h>  
 #include <netinet/in.h>  
 #include <arpa/inet.h> 
+#include <signal.h>
 #include "protocol.h"
+#include "client.h"
+
+// Socket client globale pour le nettoyage lors d'un signal
+static volatile int g_dS_client = -1;
+
+// Gestionnaire de signal pour fermeture propre (Ctrl+C, kill, etc.)
+void handler_signal_client(int sig) {
+    printf("\n[client] Signal %d reçu, fermeture propre...\n", sig);
+
+    if (g_dS_client != -1) {
+        close(g_dS_client);
+        g_dS_client = -1;
+    }
+
+    printf("[client] Socket fermée, arrêt.\n");
+    exit(0);
+}
+
 
 
 // pour lancer :
@@ -19,12 +38,21 @@ int lancement_client(int argc, char *argv[]) {
         exit(1);
     }
 
+    // Enregistrement des gestionnaires de signaux
+    struct sigaction sa;
+    sa.sa_handler = handler_signal_client;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);   // Ctrl+C
+    sigaction(SIGTERM, &sa, NULL);  // kill
+
     //creation socket
     int dS = socket(PF_INET, SOCK_STREAM, 0);
     if (dS<0){
         perror("Erreur création socket client");
         exit(1);
     }
+    g_dS_client = dS; // sauvegarder pour le handler de signal
 
     //on va utiliser IPV4
     struct sockaddr_in aS;
@@ -44,29 +72,143 @@ int lancement_client(int argc, char *argv[]) {
 
     //communication
     char m[20];
+
+    //login=1 quand le auth est reussi
+    int login = -1;
+    while(login != 1){
+        memset(m, 0, sizeof(m));
+        printf("commande disponible : auth, creer compte\n");
+
+        printf("Entrer une commande : ");
+        fgets(m, sizeof(m), stdin);
+        m[strcspn(m, "\n")] = '\0'; // retirer le \n
+
+        login = traiter_requete_debut(dS, m); 
+    }
+
+    memset(m, 0, sizeof(m));
+    printf("commande disponible : chercher partie\n");
     printf("Entrer une commande : ");
-    scanf("%[^\n]", m);
+    fgets(m, sizeof(m), stdin);
+    m[strcspn(m, "\n")] = '\0';
 
-    //vérifier la commande avant de l'envoyer pour savoir si on doit pas faire d'autre action avant de l'envoyer!!!
-
-    if(send(dS, m, strlen(m) + 1, 0)<0){
-        perror("Erreur pour envoyer message");
-        close(dS);
-        exit(1);
-    }
-
-    int r;
-    if(recv(dS, &r, sizeof(int), 0)<0){
-        perror("Erreur pour recevoir message");
-        close(dS);
-        exit(1);
-    }
-    printf("reponse : %d\n", r);
+    traiter_requete_jeu(dS, m); 
 
     //fermer socket
     close (dS);
 
     return 0;
+}
+
+int traiter_requete_debut(int dS, char *m){
+    if(strcmp(m, "creer compte") == 0){
+        str_RequAuth req;
+        memset(&req, 0, sizeof(req));
+
+        printf("username : ");
+        scanf("%31s", req.username);
+        printf("password : ");
+        scanf("%31s", req.password);
+        int c; while ((c = getchar()) != '\n' && c != EOF); // vider le buffer
+
+        if(send_message(dS, REQ_CONNEXION, &req, sizeof(req)) < 0){
+            perror("Erreur pour envoyer message");
+            close(dS);
+            return -1;
+        }
+        
+        // Recevoir la réponse du serveur
+        MsgHeader header;
+        str_RepAuth rep;
+        memset(&rep, 0, sizeof(rep));
+
+        if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
+            perror("Erreur pour recevoir la réponse");
+            close(dS);
+            return -1;
+        }
+
+        if(rep.resultat == STATUS_OK){
+            printf("Compte créé avec succès pour '%s' !\n", rep.username);
+            return 0;
+        } else {
+            printf("Erreur : le pseudo '%s' existe déjà.\n", rep.username);
+            return -1;
+        }   
+    }
+    else if(strcmp(m, "auth") == 0){
+        str_RequAuth req;
+        memset(&req, 0, sizeof(req));
+
+        printf("username : ");
+        scanf("%31s", req.username);
+        printf("password : ");
+        scanf("%31s", req.password);
+        int c; while ((c = getchar()) != '\n' && c != EOF); // vider le buffer
+
+        if(send_message(dS, REQ_AUTH, &req, sizeof(req)) < 0){
+            perror("Erreur pour envoyer message");
+            close(dS);
+            return -1;
+        }
+        
+        // Recevoir la réponse du serveur
+        MsgHeader header;
+        str_RepAuth rep;
+        memset(&rep, 0, sizeof(rep));
+
+        if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
+            perror("Erreur pour recevoir la réponse");
+            close(dS);
+            return -1;
+        }
+
+        if(rep.resultat == STATUS_OK){
+            printf("Authentification réussie pour '%s' !\n", rep.username);
+            return 1;
+        } else {
+            printf("Erreur : le pseudo '%s' n'existe pas ou le mot de passe est incorrect.\n", rep.username);
+            return -1;
+        }   
+    }
+    else{
+        printf("Commande inconnue : %s\n", m);
+        return -1;   
+    }
+}
+
+int traiter_requete_jeu(int dS, char *m){
+    if(strcmp(m, "chercher partie") == 0){
+
+        if(send_message(dS, REQ_SEARCH, NULL, 0) < 0){
+            perror("Erreur pour envoyer message");
+            close(dS);
+            return -1;
+        }
+        
+        // Recevoir la réponse du serveur
+        MsgHeader header;
+        str_RepSearch rep;
+        memset(&rep, 0, sizeof(rep));
+
+        if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
+            perror("Erreur pour recevoir la réponse");
+            close(dS);
+            return -1;
+        }
+
+        if(rep.resultat == STATUS_OK){
+            printf("recherche réussie !\n");
+            return 0;
+        } else {
+            printf("Erreur : recherche échouée.\n");
+            return -1;
+        }   
+    }
+    else{
+        printf("Commande inconnue : %s\n", m);
+        return -1;
+    }
 }
 
 int main(int argc, char *argv[]) {
