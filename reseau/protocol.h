@@ -4,12 +4,7 @@
 #include "../src/chess.h"
 #include <stdint.h>
 
-// Initialise la connexion
-int network_connect(const char *ip, int port);
-// Envoie un coup move_t
-int network_send_move(int socket, move_t move);
-// Attend et reçoit un coup move_t du serveur
-int network_receive_move(int socket, move_t *move);
+
 
 typedef enum {
     // Authentification
@@ -78,7 +73,10 @@ typedef struct {
 // REP_MOVE 
 typedef struct {
     int resultat;        // StatusCode — STATUS_OK ou STATUS_ERR_MOVE
-    int plateau[64];     // état du plateau
+    int dep_col;
+    int dep_ligne;
+    int vers_col;
+    int vers_ligne;
     int trait;           // 0 = trait au noir, 1 = trait au blanc
     int en_echec;        // 1 si le joueur au trait est en échec
 } str_RepMove;

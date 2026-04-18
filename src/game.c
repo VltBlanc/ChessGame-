@@ -304,8 +304,8 @@ void tick_network(int dS, int my_color) {
                     str_RepMove *rep = (str_RepMove *)buf;
                     
                     int index = -1;
-                    square_t s_start = MK_SQUARE(rep->plateau[1], rep->plateau[0]);
-                    square_t s_end = MK_SQUARE(rep->plateau[3], rep->plateau[2]);
+                    square_t s_start = MK_SQUARE(rep->dep_ligne, rep->dep_col);
+                    square_t s_end = MK_SQUARE(rep->vers_ligne, rep->vers_col);
                     
                     for(unsigned int i = 0; i < (unsigned int)moves.count; i++) {
                         move_t *m = NULL;
@@ -359,8 +359,11 @@ void game_network_play(int dS, int my_color) {
     init(NULL, 0);
     state_init(CHESS_START);
 
+    // Convertir la couleur réseau (1=Blanc, 0=Noir) en couleur moteur (CHESS_WHITE=8, CHESS_BLACK=16)
+    int engine_color = (my_color == 1) ? CHESS_WHITE : CHESS_BLACK;
+
     while (!WindowShouldClose()) {
-        tick_network(dS, my_color);
+        tick_network(dS, engine_color);
     }
 
     CloseWindow();

@@ -149,12 +149,11 @@ void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur) {
             rep_move.resultat = STATUS_OK;
             rep_move.trait = (room->trait == 0) ? 1 : 0; // le trait passe à l'autre
 
-            // On envoie les coordonnées du coup dans le plateau 
-            // (les 4 premières cases stockent le coup pour que le client puisse l'appliquer)
-            rep_move.plateau[0] = req->dep_col;
-            rep_move.plateau[1] = req->dep_ligne;
-            rep_move.plateau[2] = req->vers_col;
-            rep_move.plateau[3] = req->vers_ligne;
+            // On envoie les coordonnées du coup pour que le client puisse l'appliquer
+            rep_move.dep_col = req->dep_col;
+            rep_move.dep_ligne = req->dep_ligne;
+            rep_move.vers_col = req->vers_col;
+            rep_move.vers_ligne = req->vers_ligne;
 
             send_message(adversaire, REP_MOVE, &rep_move, sizeof(rep_move));
 
