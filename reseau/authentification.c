@@ -4,7 +4,7 @@
 #include "sha256.h"
 
  
-void hash_mdp(const char *password, char *output_hex) {
+void hash_password(const char *password, char *output_hex) {
         BYTE hash[32];
         SHA256_CTX ctx;
  

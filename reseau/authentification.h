@@ -3,7 +3,7 @@
 
 
 // Hash le mot de passe 
-void hash_mdp(const char *password, char *output_hex);
+void hash_password(const char *password, char *output_hex);
 
  // Crée un compte (écrit dans data_Joueur.csv).
 // Retourne 1 si succès, 0 si le pseudo existe déjà ou entrée invalide.
