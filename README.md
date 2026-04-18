@@ -33,4 +33,4 @@ Une fois le serveur en ligne, vous pouvez démarrer autant de clients que vous l
 Ce projet a été imaginé et développé en équipe par :
 - **Figlie Luca**
 - **Blanc Valentin**
-- **Sohaib Aitlamine**
+- **Ait lamine Sohaib**
