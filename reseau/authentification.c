@@ -1,12 +1,26 @@
-#include <stdio.h> //FILE
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "sha256.h"
 
-
-
+ 
+void hash_mdp(const char *password, char *output_hex) {
+        BYTE hash[32];
+        SHA256_CTX ctx;
+ 
+        sha256_init(&ctx);
+        sha256_update(&ctx, (BYTE*)password, strlen(password));
+        sha256_final(&ctx, hash);
+ 
+        for (int i = 0; i < 32; i++)
+            sprintf(output_hex + (i * 2), "%02x", hash[i]);
+        output_hex[64] = '\0';
+}
 
 int logique_create_account( char *username, char *password) {
 
+    char password_hash[65];
+    hash_password(password, password_hash);
 
     //Précondition : Taille des entrées 
     if (strlen(username) >= 32 || strlen(password) >= 32) {
@@ -38,7 +52,7 @@ int logique_create_account( char *username, char *password) {
             perror("Erreur ouverture fichier CSV en écriture");
             return 0;
         }
-        fprintf(op,"%s,%s\n", username,password);
+        fprintf(op, "%s,%s\n", username, password_hash);
         fclose(op);
         printf("Le compte est crée ! \n ");
         return 1; // Écriture réussie
@@ -50,13 +64,12 @@ int logique_create_account( char *username, char *password) {
     return 0; //Erreur 
 }
 
-
-
-
 int logique_connexion( char *username, char *password) {
     char ligne[1024];
     int correspondance = 0;
-
+    
+    char password_hash[65];
+    hash_password(password, password_hash);
 
 
     FILE *op = fopen("data/data_Joueur.csv", "r");
@@ -67,7 +80,7 @@ int logique_connexion( char *username, char *password) {
             char *pseudo_dans_csv = strtok(ligne, ",");
             char *password_dans_csv = strtok(NULL, ",");
 
-            if( strcmp(username, pseudo_dans_csv) == 0 && strcmp(password,password_dans_csv) == 0) {    
+            if( strcmp(username, pseudo_dans_csv) == 0 && strcmp(password_hash, password_dans_csv) == 0) {    
                 correspondance = 1; //On a trouvé une correspondance, on peut créer la connexion 
                 break;
             }
