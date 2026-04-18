@@ -61,18 +61,18 @@ message * recevoir_chat(int socket , int room_id){
     return msg_reçu;
 }
 // !!! petit problème pour le moment : le joueur reçoie le msg de lui même !!! ( une premier idée c'est de le gerer chez le joueur ( igorer le msg de lui même )
-void diffuser_msg_room(room * distination , message * msg){
+void diffuser_msg_room(Room * distination , message * msg,int socket_emetteur){
     if (distination == NULL || msg == NULL){return;} // gestion d'erreur
     // envoyer au joueur
     for ( int i = 0 ; i<2 ; i ++){
-        if (distination->joueurs[i] != -1) {
+        if (distination->joueurs[i] != -1 && distination->joueurs[i] != socket_emetteur) {
             // MSG_DONTWAIT pour ne pas bloquer le serveur si un joueur lag
             send(distination->joueurs[i], msg, sizeof(message), MSG_DONTWAIT);
         }
     }
     // envoyer au spectateurs
     for (int i = 0; i < distination->nb_spectateurs; i++) {
-        if (distination->spectateurs[i] != -1) {
+        if (distination->spectateurs[i] != -1 && distination->spectateurs[i] != socket_emetteur) {
             send(distination->spectateurs[i], msg, sizeof(message), MSG_DONTWAIT);
         }
     }
