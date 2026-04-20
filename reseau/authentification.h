@@ -5,14 +5,7 @@
 // Hash le mot de passe 
 void hash_password(const char *password, char *output_hex);
 
- // Crée un compte (écrit dans data_Joueur.csv).
-// Retourne 1 si succès, 0 si le pseudo existe déjà ou entrée invalide.
-int logique_create_account(char *username, char *password);
-
-// Vérifie les identifiants (lecture data_Joueur.csv).
-// Retourne 1 si correspondance trouvée, 0 sinon.
-int logique_connexion(char *username, char *password);
-
-
+int logique_create_account(const char *username, const char *password);
+int logique_connexion(const char *username, const char *password);
 
 #endif

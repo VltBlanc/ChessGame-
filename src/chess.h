@@ -2,6 +2,8 @@
 #define CHESS_H
 
 #include "ds.h"
+#include <time.h>    
+#include <stdint.h>  
 
 #define CHESS_WIDTH 8
 #define CHESS_HEIGHT 8
@@ -17,12 +19,15 @@ typedef struct square_t {
 #define MK_SQUARE(r, f)                                                        \
     (square_t) { .rank = r, .file = f }
 
-typedef struct move_t {
-    square_t start;
-    square_t end;
-    char move;
-    char promotion; // In case we have a promote move we have to choose a piece
-} move_t;
+typedef struct {
+        uint16_t move;
+        square_t start;
+        square_t end;
+        char promotion;
+        
+        time_t timestamp;
+        int duree_secondes;
+    } move_t;
 
 #define MK_MOVE(s, e, m, p)                                                  \
     (move_t) { .start = s, .end = e, .move = m, .promotion = p }

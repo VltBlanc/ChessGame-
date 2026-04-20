@@ -10,79 +10,72 @@
 #include <pthread.h>
 #include <signal.h>
 #include "serveur.h"
+#include "authentification.h"
 
-// Socket serveur globale pour le nettoyage lors d'un signal
+// Structure pour passer les infos au thread
+typedef struct {
+    int socket;
+    char pseudo[32];
+} client_data_t;
+
 static volatile int g_dS = -1;
 
-// Gestionnaire de signal pour fermeture propre (Ctrl+C, kill, etc.)
-// Note : exit() ferme automatiquement toutes les sockets clients ouvertes
 void handler_signal(int sig) {
     (void)sig;
     const char msg[] = "\n[serveur] Signal recu, fermeture propre...\n";
     write(STDOUT_FILENO, msg, sizeof(msg) - 1);
-
-    // Fermer la socket serveur pour débloquer accept()
     if (g_dS != -1) {
         close(g_dS);
         g_dS = -1;
     }
-
-    // exit() fermera les sockets clients automatiquement
     _exit(0);
 }
 
-
-// Fonction exécutée par chaque thread
 void* routine_client(void* arg) {
-    int dSC = *(int*)arg;
-    free(arg);
+    client_data_t* data = (client_data_t*)arg;
+    int dSC = data->socket;
+    char mon_pseudo[32];
+    memset(mon_pseudo, 0, 32);
 
-    // Lire le header + payload via recv_message
     MsgHeader header;
     char buf[512];
-    memset(buf, 0, sizeof(buf));
 
-    int login=-1;
-    while (login !=5){
+    int login = -1;
+    while (login != 5) {
         int type = recv_message(dSC, &header, buf, sizeof(buf));
         if (type < 0) {
-            perror("Erreur pour recevoir message");
             close(dSC);
+            free(data);
             pthread_exit(0);
         }
 
-        printf("recu : type=%d, length=%u\n", header.type, header.length);
-
+        // On récupère le pseudo si l'auth réussit
         login = traiter_requete_debut(dSC, &header, buf);
+        if (login == 5) {
+            str_RequAuth *req = (str_RequAuth *)buf;
+            strncpy(mon_pseudo, req->username, 31);
+        }
     }
 
     while (1) {
         int type = recv_message(dSC, &header, buf, sizeof(buf));
         if (type <= 0) {
-            printf("[serveur] Deconnexion joueur.\n");
+            printf("[serveur] Deconnexion joueur : %s\n", mon_pseudo);
             break;
         }
 
-        printf("recu : type=%d, length=%u\n", header.type, header.length);
-
-        traiter_requete_jeu(dSC, &header, buf);
+        // On passe le pseudo à la gestion du jeu
+        traiter_requete_jeu(dSC, &header, buf, mon_pseudo);
     }
 
-    // ferme socket
     close(dSC);
+    free(data);
     pthread_exit(0);
 }
 
 int traiter_requete_debut(int dSC, MsgHeader *header, void *payload) {
-
-    //creer compte
     if (header->type == REQ_CONNEXION) {
         str_RequAuth *req = (str_RequAuth *)payload;
-
-        printf("[creer compte] username='%s'\n", req->username);
-
-        printf("password='%s'\n", req->password);   
-        printf("username='%s'\n", req->username);   
         int ok = logique_create_account(req->username, req->password);
 
         str_RepAuth rep;
@@ -90,21 +83,11 @@ int traiter_requete_debut(int dSC, MsgHeader *header, void *payload) {
         rep.resultat = ok ? STATUS_OK : STATUS_ERR_AUTH;
         strncpy(rep.username, req->username, sizeof(rep.username) - 1);
 
-        if (send_message(dSC, REP_CONNEXION, &rep, sizeof(rep)) < 0) {
-            perror("Erreur pour envoyer REP_CONNEXION");
-            return -1;
-        }
+        send_message(dSC, REP_CONNEXION, &rep, sizeof(rep));
         return ok ? STATUS_OK : STATUS_ERR_AUTH;
     }
-
-    //connexion
     else if (header->type == REQ_AUTH) {
         str_RequAuth *req = (str_RequAuth *)payload;
-
-        printf("[connexion] username='%s'\n", req->username);
-
-        printf("password='%s'\n", req->password);   
-        printf("username='%s'\n", req->username);   
         int ok = logique_connexion(req->username, req->password);
 
         str_RepAuth rep;
@@ -112,145 +95,90 @@ int traiter_requete_debut(int dSC, MsgHeader *header, void *payload) {
         rep.resultat = ok ? STATUS_OK : STATUS_ERR_AUTH;
         strncpy(rep.username, req->username, sizeof(rep.username) - 1);
 
-        if (send_message(dSC, REP_AUTH, &rep, sizeof(rep)) < 0) {
-            perror("Erreur pour envoyer REP_AUTH");
-            return -1;
-        }
+        send_message(dSC, REP_AUTH, &rep, sizeof(rep));
         return ok ? 5 : STATUS_ERR_AUTH;
     }
-    else {
-        printf("[serveur] type de requête inconnu : %d\n", header->type);
-        return -1;
-    }
+    return -1;
 }
 
-int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload) {
+// MODIFICATION : Ajout de l'argument pseudo
+int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload, const char* pseudo) {
     (void)payload;
     
-    //chercher partie
     if (header->type == REQ_SEARCH) {
-        printf("[serveur] REQ_SEARCH reçu, mise en file d'attente...\n");
+        printf("[serveur] %s cherche une partie...\n", pseudo);
 
-        // Bloque ici tant que les 2 joueurs ne sont pas réunis
-        int room_idx = room_rejoindre_file(dSC);
+        // MODIFICATION : On passe le pseudo pour l'historique
+        int room_idx = room_rejoindre_file(dSC, pseudo);
 
-        // On arrive ici SEULEMENT quand les 2 joueurs sont dans la room
         Room *room = &rooms[room_idx];
-        int couleur = (room->joueurs[0] == dSC) ? 1 : 0; // 1=blanc, 0=noir
+        int couleur = (room->joueurs[0] == dSC) ? 1 : 0; 
 
         str_RepSearch rep;
         memset(&rep, 0, sizeof(rep));
         rep.resultat = STATUS_OK;
         rep.couleur  = couleur;
+        // Optionnel: copier l'adversaire ici si votre protocole le permet
 
-        if (send_message(dSC, REP_SEARCH, &rep, sizeof(rep)) < 0) {
-            perror("Erreur pour envoyer REP_SEARCH");
-            close(dSC);
-            pthread_exit(0);
-        }
+        send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
 
-        printf("[serveur] Match trouvé ! room=%d, couleur=%s\n",
-               room_idx, couleur ? "blanc" : "noir");
+        printf("[serveur] Match trouvé ! %s joue les %s (Room %d)\n",
+               pseudo, couleur ? "Blancs" : "Noirs", room_idx);
 
-        // Phase 3 : Boucle de jeu — relayer les coups
         room_boucle_jeu(room, dSC, couleur);
         return 0;
     }
-    else {
-        printf("[serveur] type de requête inconnu : %d\n", header->type);
-        return -1;
-    }
+    return -1;
 }
 
-// pour lancer
-// ./serveur numero_du_port
 int lancement_serveur(int argc, char *argv[]) {
-
     if (argc < 2) {
-        printf("Erreur : Tu dois préciser un port ! Exemple : %s 8080\n", argv[0]);
+        printf("Usage: %s <port>\n", argv[0]);
         exit(1);
     }
 
-    // Enregistrement des gestionnaires de signaux
     struct sigaction sa;
     sa.sa_handler = handler_signal;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, NULL);   // Ctrl+C
-    sigaction(SIGTERM, &sa, NULL);  // kill
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
 
-    //creation socket
-    int dS= socket(PF_INET, SOCK_STREAM, 0);
-    if (dS<0){
-        perror("Erreur création socket serveur\n");
-        exit(1);
-    }
-    g_dS = dS; // sauvegarder pour le handler de signal
+    int dS = socket(PF_INET, SOCK_STREAM, 0);
+    g_dS = dS;
 
-    // Permet de réutiliser le port immédiatement après un arrêt
     int opt = 1;
     setsockopt(dS, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    //on va utiliser IPV4
     struct sockaddr_in ad;
     ad.sin_family = AF_INET;
-
-    //adresse d'écoute
     ad.sin_addr.s_addr = INADDR_ANY;
-
-    //convertie le port
     ad.sin_port = htons(atoi(argv[1]));
 
-    //nommer socket
-    if(bind(dS, (struct sockaddr*)&ad, sizeof(ad))<0){
-        perror("Erreur nommage socket (surement port deja utilisé)\n");
-        close(dS);
+    if(bind(dS, (struct sockaddr*)&ad, sizeof(ad)) < 0){
+        perror("Erreur bind");
         exit(1);
     }
 
-    //socket en mode ecoute
-    if(listen(dS, 7)<0){
-        perror("Erreur pour passer la socket en mode ecoute\n");
-        close(dS);
-        exit(1);
-    }
-
+    listen(dS, 7);
 
     while (1){
         struct sockaddr_in aC;
         socklen_t lg = sizeof(struct sockaddr_in);
-        //accepter connexion
-        int dSC= accept(dS, (struct sockaddr*) &aC,&lg);
-        if (dSC < 0) {
-            perror("erreur sur l'acceptation de la connexion\n");
-            continue;
-        }
+        int dSC = accept(dS, (struct sockaddr*) &aC, &lg);
+        if (dSC < 0) continue;
         
-        // On alloue dynamiquement pour éviter que dSC ne change avant que le thread ne le lise
-        int* client_ptr = malloc(sizeof(int));
-        if(client_ptr==NULL){
-            perror("erreur sur le malloc\n");
-            close(dSC);
-            continue;
-        }
-        *client_ptr = dSC;
+        client_data_t* data = malloc(sizeof(client_data_t));
+        data->socket = dSC;
 
-        //creation du thread
         pthread_t thread_id;
-        if(pthread_create(&thread_id, NULL, routine_client, client_ptr)!=0){
-            perror("Erreur pour creer le pthread\n");
-            free(client_ptr);
+        if(pthread_create(&thread_id, NULL, routine_client, data) != 0){
+            free(data);
             close(dSC);
             continue;
         }
-
-        //fait en sorte que le thread ne soit plus en mode join (et donc quand il se finit il se supprime vraiment)
         pthread_detach(thread_id);
     }
-
-    //ferme socket
-    close (dS);
-
     return 0;
 }
 

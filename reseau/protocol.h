@@ -37,12 +37,11 @@ typedef enum {
 } StatusCode;
 
 typedef enum {
-    GAME_CHECKMATE    = 1,  // Échec et mat
-    GAME_STALEMATE    = 2,  // Pat
-    GAME_DRAW_AGREE   = 3,  // Accord mutuel
-    GAME_DRAW_50      = 4,  // Règle des 50 coups
-    GAME_DRAW_REPEAT  = 5,  // Répétition 3x
-    GAME_RESIGN       = 6,  // Abandon
+    GAME_CHECKMATE    = 1,
+    GAME_STALEMATE    = 2,
+    GAME_DRAW         = 3,
+    GAME_RESIGN       = 4,
+    GAME_DISCONNECT   = 5   
 } GameOverPartie;
 
 

@@ -346,7 +346,10 @@ void tick_network(int dS, int my_color) {
                     str_RepResultatPartie *rep = (str_RepResultatPartie *)buf;
                     if (rep->raison == GAME_RESIGN) {
                         opponent_quit_gui = 1;
+                    } else if (rep->raison == GAME_CHECKMATE) {
+                        checkmate_gui = 1;
                     }
+                    // L'historique est sauvegardé sur le serveur, le client n'a qu'à afficher.
                 }
             }
         }
