@@ -55,7 +55,7 @@ $(OUT)/human.o: $(SRC)/human.c $(SRC)/human.h $(SRC)/chess.h $(SRC)/util.h | $(O
 $(OUT)/client: reseau/client.c reseau/protocol.c $(OUT)/game.o $(OUT)/human.o $(OUT)/chess.o $(OUT)/util.o $(OUT)/ds.o | $(OUT)
 	$(CC) $(CFLAGS) -I./src $^ -o $@ $(LDLIBS)
 
-$(OUT)/serveur: reseau/serveur.c reseau/room.c reseau/authentification.c reseau/protocol.c | $(OUT)
+$(OUT)/serveur: reseau/serveur.c reseau/room.c reseau/authentification.c reseau/protocol.c reseau/sha256.c | $(OUT)
 	$(CC) $(CFLAGS) $^ -o $@ -lpthread
 
 clean:

@@ -34,4 +34,3 @@ Ce projet a été imaginé et développé en équipe par :
 - **Figlie Luca**
 - **Blanc Valentin**
 - **Ait lamine Sohaib**
-
