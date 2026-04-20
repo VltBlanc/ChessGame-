@@ -102,8 +102,8 @@ void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur) {
     while (room->etat == 2) {
         // Attendre un message du client
         int type = recv_message(mon_socket, &header, buf, sizeof(buf));
-        if (type < 0) {
-            printf("[room] déconnexion d'un joueur\n");
+        if (type <= 0 || header.type == REQ_RESIGN) {
+            printf("[room] déconnexion d'un joueur ou abandon\n");
             
             if(room->etat == 2) {
                 int mon_index = (room->joueurs[0] == mon_socket) ? 0 : 1;

@@ -366,5 +366,8 @@ void game_network_play(int dS, int my_color) {
         tick_network(dS, engine_color);
     }
 
+    // Informe le serveur que le joueur quitte la partie
+    send_message(dS, REQ_RESIGN, NULL, 0);
+
     CloseWindow();
 }
