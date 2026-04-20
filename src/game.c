@@ -133,9 +133,16 @@ static void chess_print_message(const char *text) {
   int text_width = MeasureText(text, 20);
   int text_height = 20;
   int text_x = col_px + PROMOTION_GUI_WIDTH / 2 - text_width / 2;
-  int text_y = row_px + PROMOTION_GUI_HEIGHT / 2 - text_height / 2;
+  int text_y = row_px + PROMOTION_GUI_HEIGHT / 2 - text_height / 2 - 10;
 
   DrawText(text, text_x, text_y, 20, WHITE);
+  
+  const char *subtext = "Appuyez sur ESPACE pour quitter";
+  int subtext_width = MeasureText(subtext, 15);
+  int subtext_x = col_px + PROMOTION_GUI_WIDTH / 2 - subtext_width / 2;
+  int subtext_y = text_y + 25;
+  
+  DrawText(subtext, subtext_x, subtext_y, 15, LIGHTGRAY);
 }
 
 void init(void *memory, unsigned long size) {
@@ -229,8 +236,100 @@ static int opponent_quit_gui = 0;
 void tick_network(int dS, int my_color) {
   BeginDrawing();
   ClearBackground(RAYWHITE);
-  chess_print_board();
+  
+  // Vider le buffer réseau pour lire les infos (abandon de l'adversaire ou coup reçu)
+  struct timeval timeout = {0, 0};
 
+  while (1) {
+    fd_set set;
+    FD_ZERO(&set);
+    FD_SET(dS, &set);
+    
+    if (select(dS + 1, &set, NULL, NULL, &timeout) <= 0) {
+      break; // Aucun message ou erreur
+    }
+    
+    MsgHeader header;
+    char buf[512];
+    int type = recv_message(dS, &header, buf, sizeof(buf));
+
+    if (type <= 0) {
+      opponent_quit_gui = 1;
+      break;  // Prevent infinite loop on disconnect
+    } else if (header.type == REP_RESULTAT_PARTIE) {
+      str_RepResultatPartie *rep = (str_RepResultatPartie *)buf;
+      if (rep->raison == GAME_RESIGN) {
+        opponent_quit_gui = 1;
+      }
+    } else if (header.type == REP_MOVE) {
+      str_RepMove *rep = (str_RepMove *)buf;
+
+      if (state.current_player != my_color) {
+        int index = -1;
+        square_t s_start = MK_SQUARE(rep->dep_ligne, rep->dep_col);
+        square_t s_end = MK_SQUARE(rep->vers_ligne, rep->vers_col);
+
+        for (unsigned int i = 0; i < (unsigned int)moves.count; i++) {
+          move_t *m = NULL;
+          ds_dynamic_array_get_ref(&moves, i, (void **)&m);
+          if (m->start.file == s_start.file &&
+              m->start.rank == s_start.rank && m->end.file == s_end.file &&
+              m->end.rank == s_end.rank) {
+            index = i;
+            break;
+          }
+        }
+
+        if (index != -1) {
+          move_t *move = NULL;
+          ds_dynamic_array_get_ref(&moves, index, (void **)&move);
+
+          chess_apply_move(&state, *move);
+          if (move->move == CHESS_MOVE) {
+            PlaySound(LoadSoundCachedMove(CHESS_MOVE));
+          } else if ((move->move & CHESS_CAPTURE) != 0) {
+            PlaySound(LoadSoundCachedMove(CHESS_CAPTURE));
+          } else if ((move->move & CHESS_CASTLE_SHORT) != 0 ||
+                     (move->move & CHESS_CASTLE_LONG) != 0) {
+            PlaySound(LoadSoundCachedMove(CHESS_CASTLE_SHORT));
+          }
+
+          state.current_player = chess_flip_player(state.current_player);
+          is_in_check = chess_is_in_check(&state, state.current_player);
+          chess_generate_moves(&state, &moves);
+
+          if (checkmate_gui == 0 &&
+              chess_is_checkmate(&state, state.current_player)) {
+            checkmate_gui = 1;
+            str_ReqGameOver go;
+            memset(&go, 0, sizeof(go));
+            go.raison = GAME_CHECKMATE;
+            // celui qui a mater l'adversaire gagne
+            go.gagnant = (my_color == CHESS_WHITE) ? 1 : 0; 
+            send_message(dS, REQ_GAME_OVER, &go, sizeof(go));
+          } else if (stalemate_gui == 0 &&
+                     chess_is_stalemate(&state, state.current_player)) {
+            stalemate_gui = 1;
+            str_ReqGameOver go;
+            memset(&go, 0, sizeof(go));
+            go.raison = GAME_STALEMATE;
+            go.gagnant = 2; // nul
+            send_message(dS, REQ_GAME_OVER, &go, sizeof(go));
+          } else if (draw_gui == 0 &&
+                     chess_is_draw(&state, state.current_player)) {
+            draw_gui = 1;
+            str_ReqGameOver go;
+            memset(&go, 0, sizeof(go));
+            go.raison = GAME_DRAW_50;
+            go.gagnant = 2; // nul
+            send_message(dS, REQ_GAME_OVER, &go, sizeof(go));
+          }
+        }
+      }
+    }
+  }
+
+  chess_print_board();
   if (checkmate_gui == 1) {
     chess_print_message("Checkmate!");
   } else if (stalemate_gui == 1) {
@@ -313,73 +412,6 @@ void tick_network(int dS, int my_color) {
           }
         }
       }
-    } else {
-      fd_set set;
-      FD_ZERO(&set);
-      FD_SET(dS, &set);
-      struct timeval timeout = {0, 0};
-
-      if (select(dS + 1, &set, NULL, NULL, &timeout) > 0) {
-        MsgHeader header;
-        char buf[512];
-        int type = recv_message(dS, &header, buf, sizeof(buf));
-
-        if (type <= 0) {
-          opponent_quit_gui = 1;
-        } else if (header.type == REP_MOVE) {
-          str_RepMove *rep = (str_RepMove *)buf;
-
-          int index = -1;
-          square_t s_start = MK_SQUARE(rep->dep_ligne, rep->dep_col);
-          square_t s_end = MK_SQUARE(rep->vers_ligne, rep->vers_col);
-
-          for (unsigned int i = 0; i < (unsigned int)moves.count; i++) {
-            move_t *m = NULL;
-            ds_dynamic_array_get_ref(&moves, i, (void **)&m);
-            if (m->start.file == s_start.file &&
-                m->start.rank == s_start.rank && m->end.file == s_end.file &&
-                m->end.rank == s_end.rank) {
-              index = i;
-              break;
-            }
-          }
-
-          if (index != -1) {
-            move_t *move = NULL;
-            ds_dynamic_array_get_ref(&moves, index, (void **)&move);
-
-            chess_apply_move(&state, *move);
-            if (move->move == CHESS_MOVE) {
-              PlaySound(LoadSoundCachedMove(CHESS_MOVE));
-            } else if ((move->move & CHESS_CAPTURE) != 0) {
-              PlaySound(LoadSoundCachedMove(CHESS_CAPTURE));
-            } else if ((move->move & CHESS_CASTLE_SHORT) != 0 ||
-                       (move->move & CHESS_CASTLE_LONG) != 0) {
-              PlaySound(LoadSoundCachedMove(CHESS_CASTLE_SHORT));
-            }
-
-            state.current_player = chess_flip_player(state.current_player);
-            is_in_check = chess_is_in_check(&state, state.current_player);
-            chess_generate_moves(&state, &moves);
-
-            if (checkmate_gui == 0 &&
-                chess_is_checkmate(&state, state.current_player)) {
-              checkmate_gui = 1;
-            } else if (stalemate_gui == 0 &&
-                       chess_is_stalemate(&state, state.current_player)) {
-              stalemate_gui = 1;
-            } else if (draw_gui == 0 &&
-                       chess_is_draw(&state, state.current_player)) {
-              draw_gui = 1;
-            }
-          }
-        } else if (header.type == REP_RESULTAT_PARTIE) {
-          str_RepResultatPartie *rep = (str_RepResultatPartie *)buf;
-          if (rep->raison == GAME_RESIGN) {
-            opponent_quit_gui = 1;
-          }
-        }
-      }
     }
   }
   EndDrawing();
@@ -403,10 +435,14 @@ void game_network_play(int dS, int my_color) {
 
   while (!WindowShouldClose()) {
     tick_network(dS, engine_color);
+    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER)) {
+      break;
+    }
   }
 
   // Informe le serveur que le joueur quitte la partie
   send_message(dS, REQ_RESIGN, NULL, 0);
 
+  util_clean();
   CloseWindow();
 }

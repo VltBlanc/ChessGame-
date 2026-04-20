@@ -220,3 +220,41 @@ move_score minmax(const chess_state_t *state, move_t *choices, int count,
 
     return best;
 }
+
+void util_clean(void) {
+    if (textures.capacity > 0) {
+        for (unsigned int i = 0; i < textures.capacity; i++) {
+            ds_dynamic_array *bucket = &textures.buckets[i];
+            for (unsigned int j = 0; j < bucket->count; j++) {
+                ds_hashmap_kv *kv = NULL;
+                ds_dynamic_array_get_ref(bucket, j, (void **)&kv);
+                if (kv && kv->value) {
+                    UnloadTexture(*(Texture2D*)kv->value);
+                    DS_FREE(&allocator, kv->value);
+                }
+            }
+        }
+        ds_hashmap_free(&textures);
+        textures = (ds_hashmap){0};
+    }
+    
+    if (sounds.capacity > 0) {
+        for (unsigned int i = 0; i < sounds.capacity; i++) {
+            ds_dynamic_array *bucket = &sounds.buckets[i];
+            for (unsigned int j = 0; j < bucket->count; j++) {
+                ds_hashmap_kv *kv = NULL;
+                ds_dynamic_array_get_ref(bucket, j, (void **)&kv);
+                if (kv && kv->value) {
+                    UnloadSound(*(Sound*)kv->value);
+                    DS_FREE(&allocator, kv->value);
+                }
+            }
+        }
+        ds_hashmap_free(&sounds);
+        sounds = (ds_hashmap){0};
+    }
+
+    if (IsAudioDeviceReady()) {
+        CloseAudioDevice();
+    }
+}

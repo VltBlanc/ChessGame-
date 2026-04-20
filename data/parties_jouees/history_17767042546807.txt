@@ -1,0 +1,17 @@
+ID,NBR_COUPS,BLANC,NOIR,RESULTAT,RAISON
+17767042546807,15,la,luca,0,1
+g7g5 8
+f2f3 3
+g5g4 1
+a2a4 6
+g4g3 2
+b2b4 8
+g3h2 1
+c2c4 2
+h2g1 2
+h1g1 4
+e7e5 2
+g2g4 3
+d8h4 4
+g1g3 2
+h4g3 2
