@@ -193,6 +193,7 @@ int traiter_requete_debut(int dS, char *m){
 int traiter_requete_jeu(int dS, char *m){
     if(strcmp(m, "chercher partie") == 0){
 
+        printf("en attente de l'adversaire...\n");
         if(send_message(dS, REQ_SEARCH, NULL, 0) < 0){
             perror("Erreur pour envoyer message");
             close(dS);
