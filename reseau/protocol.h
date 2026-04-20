@@ -25,6 +25,9 @@ typedef enum {
     // connexion
     REQ_CONNEXION       = 9,  // Client --> Serveur : demande connexion
     REP_CONNEXION       = 10, // Serveur --> Client : réponse connexion
+    
+    // Quitter partie
+    REQ_RESIGN          = 11, // Client --> Serveur : quitter la room
 } MsgType;
 
 typedef enum {

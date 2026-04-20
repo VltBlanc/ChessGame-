@@ -56,16 +56,17 @@ void* routine_client(void* arg) {
         login = traiter_requete_debut(dSC, &header, buf);
     }
 
-    int type = recv_message(dSC, &header, buf, sizeof(buf));
-    if (type < 0) {
-        perror("Erreur pour recevoir message");
-        close(dSC);
-        pthread_exit(0);
+    while (1) {
+        int type = recv_message(dSC, &header, buf, sizeof(buf));
+        if (type <= 0) {
+            printf("[serveur] Deconnexion joueur.\n");
+            break;
+        }
+
+        printf("recu : type=%d, length=%u\n", header.type, header.length);
+
+        traiter_requete_jeu(dSC, &header, buf);
     }
-
-    printf("recu : type=%d, length=%u\n", header.type, header.length);
-
-    traiter_requete_jeu(dSC, &header, buf);
 
     // ferme socket
     close(dSC);

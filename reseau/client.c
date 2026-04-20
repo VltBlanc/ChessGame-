@@ -88,15 +88,23 @@ int lancement_client(int argc, char *argv[]) {
         login = traiter_requete_debut(dS, m); 
     }
 
-    memset(m, 0, sizeof(m));
-    printf("commande disponible : chercher partie\n");
-    printf("Entrer une commande : ");
-    fgets(m, sizeof(m), stdin);
-    m[strcspn(m, "\n")] = '\0';
+    while (1) {
+        memset(m, 0, sizeof(m));
+        printf("\ncommandes disponibles : chercher partie, quit\n");
+        printf("Entrer une commande : ");
+        if (fgets(m, sizeof(m), stdin) == NULL) {
+            break;
+        }
+        m[strcspn(m, "\n")] = '\0';
 
-    int couleur = traiter_requete_jeu(dS, m); 
-    if (couleur >= 0) {
-        game_network_play(dS, couleur);
+        if (strcmp(m, "quit") == 0) {
+            break;
+        }
+
+        int couleur = traiter_requete_jeu(dS, m); 
+        if (couleur >= 0) {
+            game_network_play(dS, couleur);
+        }
     }
 
     //fermer socket
@@ -185,6 +193,7 @@ int traiter_requete_debut(int dS, char *m){
 int traiter_requete_jeu(int dS, char *m){
     if(strcmp(m, "chercher partie") == 0){
 
+        printf("en attente de l'adversaire...\n");
         if(send_message(dS, REQ_SEARCH, NULL, 0) < 0){
             perror("Erreur pour envoyer message");
             close(dS);
