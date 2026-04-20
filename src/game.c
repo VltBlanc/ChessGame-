@@ -390,6 +390,13 @@ void game_network_play(int dS, int my_color) {
   init(NULL, 0);
   state_init(CHESS_START);
 
+  // Réinitialiser les flags d'affichage pour la nouvelle partie
+  checkmate_gui = 0;
+  stalemate_gui = 0;
+  draw_gui = 0;
+  is_in_check = 0;
+  opponent_quit_gui = 0;
+
   // Convertir la couleur réseau (1=Blanc, 0=Noir) en couleur moteur
   // (CHESS_WHITE=8, CHESS_BLACK=16)
   int engine_color = (my_color == 1) ? CHESS_WHITE : CHESS_BLACK;
