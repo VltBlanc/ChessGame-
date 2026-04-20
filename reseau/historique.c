@@ -309,6 +309,105 @@ void stats_ecrire(stats_joueur s) {
   fclose(f);
 }
 
+/* ------------------------------------------------------------------ */
+/*  Affichage terminal                                                 */
+/* ------------------------------------------------------------------ */
+
+void historique_afficher_stats(const char *pseudo) {
+  stats_joueur s = stats_lire(pseudo);
+
+  int total = s.victoires + s.defaites + s.nulles;
+
+  printf("\n╔══════════════════════════════╗\n");
+  printf("║  Statistiques : %-12s║\n", pseudo);
+  printf("╠══════════════════════════════╣\n");
+  printf("║  Parties jouées : %-10d║\n", total);
+  printf("║  Victoires      : %-10d║\n", s.victoires);
+  printf("║  Défaites       : %-10d║\n", s.defaites);
+  printf("║  Nulles         : %-10d║\n", s.nulles);
+
+  if (total > 0)
+    printf("║  Ratio          : %-9.1f%%║\n", s.ratio * 100.0f);
+  else
+    printf("║  Ratio          : N/A       ║\n");
+
+  printf("╚══════════════════════════════╝\n\n");
+}
+
+void historique_afficher_parties(const char *pseudo) {
+  FILE *f = fopen("data/index_parties.csv", "r");
+  if (!f) {
+    printf("[historique] Aucune partie enregistrée (index introuvable).\n");
+    return;
+  }
+
+  /* Correspondance résultat (entier) → label lisible */
+  const char *labels_resultat[] = {
+      "Blanc gagne", /* RESULTAT_PARTIE_WHITE_WIN = 0 */
+      "Noir  gagne", /* RESULTAT_PARTIE_NOIR_WIN  = 1 */
+      "Nulle"        /* RESULTAT_PARTIE_DRAW      = 2 */
+  };
+
+  printf("\n╔══════════════════════════════════════════════════════╗\n");
+  printf("║  Parties de %-39s║\n", pseudo);
+  printf("╠══════════╦══════════════╦══════════════╦════════════╣\n");
+  printf("║    ID    ║    Blanc     ║    Noir      ║ Résultat   ║\n");
+  printf("╠══════════╬══════════════╬══════════════╬════════════╣\n");
+
+  char ligne[256];
+  int nb_affichees = 0;
+
+  /* Saute l'en-tête si présente (première ligne ne commençant pas par un
+   * chiffre) */
+  if (fgets(ligne, sizeof(ligne), f) != NULL) {
+    if (ligne[0] >= '0' && ligne[0] <= '9') {
+      /* Pas d'en-tête : c'est déjà une donnée, on la traite */
+      goto traiter_ligne;
+    }
+  }
+
+  while (fgets(ligne, sizeof(ligne), f)) {
+  traiter_ligne:;
+    char tmp[256];
+    strncpy(tmp, ligne, sizeof(tmp) - 1);
+    tmp[sizeof(tmp) - 1] = '\0';
+
+    char *id_str = strtok(tmp, ",");
+    char *blanc = strtok(NULL, ",");
+    char *noir = strtok(NULL, ",");
+    char *res_str = strtok(NULL, ",\n");
+
+    if (!id_str || !blanc || !noir || !res_str)
+      continue;
+
+    blanc[strcspn(blanc, "\n")] = '\0';
+    noir[strcspn(noir, "\n")] = '\0';
+    res_str[strcspn(res_str, "\n")] = '\0';
+
+    /* Filtrer sur le pseudo */
+    if (strcmp(pseudo, blanc) != 0 && strcmp(pseudo, noir) != 0)
+      continue;
+
+    long id = atol(id_str);
+    int res = atoi(res_str);
+
+    const char *res_label = "?";
+    if (res >= 0 && res <= 2)
+      res_label = labels_resultat[res];
+
+    printf("║ %8ld ║ %-12s ║ %-12s ║ %-10s ║\n", id, blanc, noir, res_label);
+    nb_affichees++;
+  }
+
+  fclose(f);
+
+  if (nb_affichees == 0)
+    printf("║         Aucune partie trouvée pour ce joueur.        ║\n");
+
+  printf("╚══════════╩══════════════╩══════════════╩════════════╝\n");
+  printf("  %d partie(s) affichée(s).\n\n", nb_affichees);
+}
+
 void stats_mettre_a_jour(historique_partie *h) {
   stats_joueur blanc = stats_lire(h->joueur_blanc);
   stats_joueur noir = stats_lire(h->joueur_noir);
