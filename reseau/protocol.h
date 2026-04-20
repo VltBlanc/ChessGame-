@@ -28,6 +28,9 @@ typedef enum {
     
     // Quitter partie
     REQ_RESIGN          = 11, // Client --> Serveur : quitter la room
+
+    // Fin de partie (mat, pat, nulle)
+    REQ_GAME_OVER       = 12, // Client --> Serveur : la partie est terminée
 } MsgType;
 
 typedef enum {
@@ -90,6 +93,12 @@ typedef struct {
     int  gagnant;        // 0 = noirs, 1 = blancs, 2 = nul
     char nom_gagnant[32];
 } str_RepResultatPartie;
+
+// REQ_GAME_OVER
+typedef struct {
+    int  raison;         // GameOverPartie (GAME_CHECKMATE, GAME_STALEMATE, etc.)
+    int  gagnant;        // 0 = noirs, 1 = blancs, 2 = nul
+} str_ReqGameOver;
 
 // REP_SEARCH 
 typedef struct {

@@ -21,6 +21,6 @@ void* routine_client(void* arg);
 int traiter_requete_debut(int dSC, MsgHeader *header, void *payload);
 
 // Traite les requêtes de jeu (ex: recherche de partie).
-int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload);
+int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload, const char *username);
 
 #endif // SERVEUR_H

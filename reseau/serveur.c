@@ -42,6 +42,8 @@ void* routine_client(void* arg) {
     char buf[512];
     memset(buf, 0, sizeof(buf));
 
+    char username[32] = {0}; // Pseudo du joueur authentifié
+
     int login=-1;
     while (login !=5){
         int type = recv_message(dSC, &header, buf, sizeof(buf));
@@ -54,18 +56,26 @@ void* routine_client(void* arg) {
         printf("recu : type=%d, length=%u\n", header.type, header.length);
 
         login = traiter_requete_debut(dSC, &header, buf);
+
+        // Récupérer le pseudo après authentification réussie
+        if (login == 5) {
+            str_RequAuth *req = (str_RequAuth *)buf;
+            strncpy(username, req->username, sizeof(username) - 1);
+            username[sizeof(username) - 1] = '\0';
+            printf("[serveur] Joueur authentifié : %s\n", username);
+        }
     }
 
     while (1) {
         int type = recv_message(dSC, &header, buf, sizeof(buf));
         if (type <= 0) {
-            printf("[serveur] Deconnexion joueur.\n");
+            printf("[serveur] Deconnexion joueur %s.\n", username);
             break;
         }
 
         printf("recu : type=%d, length=%u\n", header.type, header.length);
 
-        traiter_requete_jeu(dSC, &header, buf);
+        traiter_requete_jeu(dSC, &header, buf, username);
     }
 
     // ferme socket
@@ -124,15 +134,15 @@ int traiter_requete_debut(int dSC, MsgHeader *header, void *payload) {
     }
 }
 
-int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload) {
+int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload, const char *username) {
     (void)payload;
     
     //chercher partie
     if (header->type == REQ_SEARCH) {
-        printf("[serveur] REQ_SEARCH reçu, mise en file d'attente...\n");
+        printf("[serveur] REQ_SEARCH reçu de %s, mise en file d'attente...\n", username);
 
         // Bloque ici tant que les 2 joueurs ne sont pas réunis
-        int room_idx = room_rejoindre_file(dSC);
+        int room_idx = room_rejoindre_file(dSC, username);
 
         // On arrive ici SEULEMENT quand les 2 joueurs sont dans la room
         Room *room = &rooms[room_idx];
@@ -149,8 +159,8 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload) {
             pthread_exit(0);
         }
 
-        printf("[serveur] Match trouvé ! room=%d, couleur=%s\n",
-               room_idx, couleur ? "blanc" : "noir");
+        printf("[serveur] Match trouvé ! room=%d, %s joue %s\n",
+               room_idx, username, couleur ? "blanc" : "noir");
 
         // Phase 3 : Boucle de jeu — relayer les coups
         room_boucle_jeu(room, dSC, couleur);
