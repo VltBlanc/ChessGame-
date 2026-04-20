@@ -55,4 +55,6 @@ move_score minmax(const chess_state_t *state, move_t *choices, int count,
                   char maxxing, int depth, int alpha, int beta, eval_fn *eval,
                   sort_fn *sort, minmax_info *info);
 
+void util_clean(void);
+
 #endif // UTIL_H
