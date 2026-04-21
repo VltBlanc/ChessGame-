@@ -195,37 +195,39 @@ int historique_charger(historique_partie *h, long id_partie) {
   return 0;
 }
 
-int historique_exporter_pgn(historique_partie *h, const char *nom_fichier) {
-  FILE *f = fopen(nom_fichier, "w");
-  if (!f)
-    return -1;
+char *historique_exporter_pgn(long id) {
+  historique_partie h;
+  if (historique_charger(&h, id) != 0)
+    return NULL;
 
-  char *resultat_str = "*"; // Valeur par défaut
-
-  if (h->resultat == RESULTAT_PARTIE_WHITE_WIN) {
+  char *resultat_str = "*";
+  if (h.resultat == RESULTAT_PARTIE_WHITE_WIN)
     resultat_str = "1-0";
-  } else if (h->resultat == RESULTAT_PARTIE_NOIR_WIN) {
+  else if (h.resultat == RESULTAT_PARTIE_NOIR_WIN)
     resultat_str = "0-1";
-  } else if (h->resultat == RESULTAT_PARTIE_DRAW) {
+  else if (h.resultat == RESULTAT_PARTIE_DRAW)
     resultat_str = "1/2-1/2";
-  }
 
-  fprintf(f, "[White \"%s\"]\n", h->joueur_blanc);
-  fprintf(f, "[Black \"%s\"]\n", h->joueur_noir);
-  fprintf(f, "[Result \"%s\"]\n\n", resultat_str);
+  size_t taille = 256 + h.nbr_coups * 16;
+  char *res = malloc(taille);
+  if (!res)
+    return NULL;
+
+  size_t pos = 0;
+  pos += snprintf(res + pos, taille - pos, "[White \"%s\"]\n", h.joueur_blanc);
+  pos += snprintf(res + pos, taille - pos, "[Black \"%s\"]\n", h.joueur_noir);
+  pos += snprintf(res + pos, taille - pos, "[Result \"%s\"]\n\n", resultat_str);
 
   char move_str[10];
-  for (int i = 0; i < h->nbr_coups; i++) {
+  for (int i = 0; i < h.nbr_coups; i++) {
     if (i % 2 == 0)
-      fprintf(f, "%d. ", (i / 2) + 1);
-    notation_algebrique(h->coups[i], move_str);
-    fprintf(f, "%s ", move_str);
+      pos += snprintf(res + pos, taille - pos, "%d. ", (i / 2) + 1);
+    notation_algebrique(h.coups[i], move_str);
+    pos += snprintf(res + pos, taille - pos, "%s ", move_str);
   }
 
-  fprintf(f, "%s\n", resultat_str);
-
-  fclose(f);
-  return 0;
+  snprintf(res + pos, taille - pos, "%s\n", resultat_str);
+  return res; // À free() côté appelant
 }
 
 stats_joueur stats_lire(const char *pseudo) {
@@ -316,64 +318,55 @@ void stats_ecrire(stats_joueur s) {
 
 char *historique_afficher_stats(const char *pseudo) {
   stats_joueur s = stats_lire(pseudo);
-  char *res = malloc(10000);
-  if (!res) return NULL;
-  res[0] = '\0';
-
   int total = s.victoires + s.defaites + s.nulles;
 
-  snprintf(res, 10000,
+  // Allouer un buffer suffisamment grand
+  char *res = malloc(512);
+  if (!res)
+    return NULL;
+
+  char ratio_ligne[64];
+  if (total > 0)
+    snprintf(ratio_ligne, sizeof(ratio_ligne),
+             "║  Ratio          : %-9.1f%%║\n", s.ratio * 100.0f);
+  else
+    snprintf(ratio_ligne, sizeof(ratio_ligne),
+             "║  Ratio          : N/A       ║\n");
+
+  snprintf(res, 512,
            "\n╔══════════════════════════════╗\n"
            "║  Statistiques : %-12s║\n"
            "╠══════════════════════════════╣\n"
            "║  Parties jouees : %-10d║\n"
            "║  Victoires      : %-10d║\n"
            "║  Defaites       : %-10d║\n"
-           "║  Nulles         : %-10d║\n",
-           pseudo, total, s.victoires, s.defaites, s.nulles);
-
-  char ratio_buf[128];
-  if (total > 0)
-    snprintf(ratio_buf, sizeof(ratio_buf), "║  Ratio          : %-9.1f%%║\n", s.ratio * 100.0f);
-  else
-    snprintf(ratio_buf, sizeof(ratio_buf), "║  Ratio          : N/A       ║\n");
-
-  strncat(res, ratio_buf, 10000 - strlen(res) - 1);
-  strncat(res, "╚══════════════════════════════╝\n\n", 10000 - strlen(res) - 1);
+           "║  Nulles         : %-10d║\n"
+           "%s"
+           "╚══════════════════════════════╝\n\n",
+           pseudo, total, s.victoires, s.defaites, s.nulles, ratio_ligne);
 
   return res;
 }
 
 char *historique_afficher_parties(const char *pseudo) {
-  char *res = malloc(10000);
-  if (!res) return NULL;
-  res[0] = '\0';
-
   FILE *f = fopen("data/index_parties.csv", "r");
-  if (!f) {
-    snprintf(res, 10000, "[historique] Aucune partie enregistree (index introuvable).\n");
-    return res;
-  }
+  if (!f)
+    return NULL;
 
   const char *labels_resultat[] = {"Blanc gagne", "Noir gagne", "Nulle"};
   char ligne[256];
   int nb_affichees = 0;
 
-  snprintf(res, 10000,
-           "\n╔══════════════════════════════════════════════════════╗\n"
-           "║  Parties de %-39s║\n"
-           "╠══════════╦══════════════╦══════════════╦════════════╣\n"
-           "║    ID    ║    Blanc     ║    Noir      ║ Resultat   ║\n"
-           "╠══════════╬══════════════╬══════════════╬════════════╣\n", pseudo);
-
-  if (fgets(ligne, sizeof(ligne), f) != NULL) {
-    if ((ligne[0] >= '0' && ligne[0] <= '9') || ligne[0] == '-') {
-      goto traiter_ligne;
-    }
+  size_t taille = 1024;
+  size_t pos = 0;
+  char *res = malloc(taille);
+  if (!res) {
+    fclose(f);
+    return NULL;
   }
+  res[0] = '\0';
 
   while (fgets(ligne, sizeof(ligne), f)) {
-  traiter_ligne:;
     ligne[strcspn(ligne, "\r\n")] = 0;
 
     char tmp[256];
@@ -389,37 +382,35 @@ char *historique_afficher_parties(const char *pseudo) {
 
     if (strcmp(pseudo, blanc) == 0 || strcmp(pseudo, noir) == 0) {
       long id = atol(id_str);
-      int res_val = atoi(res_str);
-      const char *res_label = (res_val >= 0 && res_val <= 2) ? labels_resultat[res_val] : "?";
+      int r = atoi(res_str);
+      const char *res_label = (r >= 0 && r <= 2) ? labels_resultat[r] : "?";
 
-      char buf[256];
-      snprintf(buf, sizeof(buf), "║ %8ld ║ %-12s ║ %-12s ║ %-10s ║\n", id, blanc, noir, res_label);
-      if (strlen(res) + strlen(buf) < 9900) {
-        strcat(res, buf);
+      // Préparer la ligne dans un buffer temporaire
+      char buf[128];
+      snprintf(buf, sizeof(buf), "║ %8ld ║ %-12s ║ %-12s ║ %-10s ║\n", id,
+               blanc, noir, res_label);
+
+      // Agrandir res si nécessaire
+      size_t len = strlen(buf);
+      if (pos + len + 1 > taille) {
+        taille *= 2;
+        char *tmp_res = realloc(res, taille);
+        if (!tmp_res) {
+          free(res);
+          fclose(f);
+          return NULL;
+        }
+        res = tmp_res;
       }
+
+      memcpy(res + pos, buf, len + 1);
+      pos += len;
       nb_affichees++;
     }
   }
+
   fclose(f);
-
-  if (nb_affichees == 0) {
-    char buf[256];
-    snprintf(buf, sizeof(buf), "║         Aucune partie trouvee pour ce joueur.        ║\n");
-    if (strlen(res) + strlen(buf) < 9900) {
-      strcat(res, buf);
-    }
-  }
-
-  char footer[256];
-  snprintf(footer, sizeof(footer),
-           "╚══════════╩══════════════╩══════════════╩════════════╝\n"
-           "  %d partie(s) affichee(s).\n\n", nb_affichees);
-
-  if (strlen(res) + strlen(footer) < 9900) {
-    strcat(res, footer);
-  }
-
-  return res;
+  return res; // À free() côté appelant
 }
 
 void stats_mettre_a_jour(historique_partie *h) {
@@ -441,14 +432,21 @@ void stats_mettre_a_jour(historique_partie *h) {
     break;
   }
 
+  /* Recalcul du ratio pour chaque joueur */
   int total_b = blanc.victoires + blanc.defaites + blanc.nulles;
   int total_n = noir.victoires + noir.defaites + noir.nulles;
 
-  if (total_b > 0) blanc.ratio = (float)blanc.victoires / total_b;
-  else blanc.ratio = 0.0f;
+  if (total_b > 0) {
+    blanc.ratio = (float)blanc.victoires / total_b;
+  } else {
+    blanc.ratio = 0.0f;
+  }
 
-  if (total_n > 0) noir.ratio = (float)noir.victoires / total_n;
-  else noir.ratio = 0.0f;
+  if (total_n > 0) {
+    noir.ratio = (float)noir.victoires / total_n;
+  } else {
+    noir.ratio = 0.0f;
+  }
 
   stats_ecrire(blanc);
   stats_ecrire(noir);
@@ -457,13 +455,26 @@ void stats_mettre_a_jour(historique_partie *h) {
 char *historique_afficher_profil(const char *pseudo) {
   char *stats = historique_afficher_stats(pseudo);
   char *parties = historique_afficher_parties(pseudo);
-  char *res = malloc(10000);
-  if (res) {
-    res[0] = '\0';
-    if (stats) strncat(res, stats, 9999);
-    if (parties) strncat(res, parties, 9999 - strlen(res));
+
+  if (!stats && !parties)
+    return NULL;
+
+  size_t len =
+      (stats ? strlen(stats) : 0) + (parties ? strlen(parties) : 0) + 1;
+  char *res = malloc(len);
+  if (!res) {
+    free(stats);
+    free(parties);
+    return NULL;
   }
-  if (stats) free(stats);
-  if (parties) free(parties);
-  return res;
+
+  res[0] = '\0';
+  if (stats)
+    strcat(res, stats);
+  if (parties)
+    strcat(res, parties);
+
+  free(stats);
+  free(parties);
+  return res; // À free() côté appelant
 }

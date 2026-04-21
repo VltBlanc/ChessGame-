@@ -69,7 +69,7 @@ void historique_ajouter_index(historique_partie *h);
 long *historique_lister_parties_joueur(const char *pseudo, int *nb_parties);
 
 /* Exporte la partie au format PGN pour les logiciels d'échecs tiers */
-int historique_exporter_pgn(historique_partie *h, const char *nom_fichier);
+char *historique_exporter_pgn(long id);
 
 /*
  * Affiche dans le terminal les statistiques d'un joueur (victoires,
