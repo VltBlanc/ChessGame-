@@ -429,9 +429,16 @@ void game_network_play(int dS, int my_color) {
   is_in_check = 0;
   opponent_quit_gui = 0;
 
-  // Convertir la couleur réseau (1=Blanc, 0=Noir) en couleur moteur
-  // (CHESS_WHITE=8, CHESS_BLACK=16)
-    int engine_color = (my_color == 1) ? CHESS_WHITE : CHESS_BLACK;
+  // Définition de la couleur pour le moteur
+  int engine_color;
+  if (my_color == 1) {
+    engine_color = CHESS_WHITE;
+  } else if (my_color == 0) {
+    engine_color = CHESS_BLACK;
+  } else {
+    // Cas spectateur (my_color == 3)
+    engine_color = 3;
+  }
 
     while (!WindowShouldClose()) {
         tick_network(dS, engine_color);
@@ -440,9 +447,9 @@ void game_network_play(int dS, int my_color) {
     }
     }
 
-    // Informe le serveur que le joueur quitte la partie
-    send_message(dS, REQ_RESIGN, NULL, 0);
+  // Informe le serveur que le client (joueur ou spectateur) quitte la partie
+  send_message(dS, REQ_RESIGN, NULL, 0);
 
   util_clean();
-    CloseWindow();
+  CloseWindow();
 }

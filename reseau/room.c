@@ -33,15 +33,23 @@ int room_creer() {
   return 0;
 }
 
-// surement a modif(gérer le mutex?)
 int room_rejoindre_spectateur(Room *room, int socket) {
+  // protection
+  pthread_mutex_lock(&room->mutex);
+
   if (room->nb_spectateurs < 10) {
     room->spectateurs[room->nb_spectateurs] = socket;
     room->nb_spectateurs++;
-    printf("spectateur rejoint la room %d\n", nb_rooms);
-    return 0;
+
+    printf("[room] Un spectateur a rejoint. Total : %d/10\n", room->nb_spectateurs);
+
+    pthread_mutex_unlock(&room->mutex);
+    return 0; // Succès
   }
-  return -1;
+
+  pthread_mutex_unlock(&room->mutex);
+  printf("[room] Erreur : Room de spectateurs pleine !\n");
+  return -1; // Échec
 }
 
 int room_demarre(Room *room) {
@@ -182,6 +190,11 @@ void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur) {
       rep_move.vers_ligne = req->vers_ligne;
 
       send_message(adversaire, REP_MOVE, &rep_move, sizeof(rep_move));
+      for (int i = 0; i < room->nb_spectateurs; i++) {
+        if (room->spectateurs[i] != -1) {
+          send_message(room->spectateurs[i], REP_MOVE, &rep_move, sizeof(rep_move));
+        }
+      }
 
       // Changer le trait
       room->trait = (room->trait == 0) ? 1 : 0;

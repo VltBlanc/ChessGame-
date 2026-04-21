@@ -32,6 +32,10 @@ typedef enum {
     // Fin de partie (mat, pat, nulle)
     REQ_GAME_OVER       = 12, // Client --> Serveur : la partie est terminée
 
+    // mode spectateur
+    REQ_SEP             = 17,
+    REP_SEP             = 18,
+
     //historique
     REQ_HISTORIQUE      = 13, // Client --> Serveur : demande historique
     REP_HISTORIQUE      = 14, // Serveur --> Client : réponse historique
