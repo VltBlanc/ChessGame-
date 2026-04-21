@@ -51,8 +51,10 @@ void historique_init(historique_partie *h, char *playerBlanc, char *playerNoir);
 /* Ajoute un nouveau coup dans le tableau de l'historique en mémoire */
 int historique_enregistrer_coup(move_t coup, historique_partie *h);
 
-/* Finalise l'historique : enregistre résultat, sauvegarde et met à jour les stats */
-void historique_finaliser(historique_partie *h, partie_resultat resultat, int raison);
+/* Finalise l'historique : enregistre résultat, sauvegarde et met à jour les
+ * stats */
+void historique_finaliser(historique_partie *h, partie_resultat resultat,
+                          int raison);
 
 /* Sauvegarde la partie (détails + index centralisé) */
 int historique_sauvegarder(historique_partie *h);
@@ -67,6 +69,27 @@ void historique_ajouter_index(historique_partie *h);
 long *historique_lister_parties_joueur(const char *pseudo, int *nb_parties);
 
 /* Exporte la partie au format PGN pour les logiciels d'échecs tiers */
-int historique_exporter_pgn(historique_partie *h, const char *nom_fichier);
+char *historique_exporter_pgn(long id);
+
+/*
+ * Affiche dans le terminal les statistiques d'un joueur (victoires,
+ * défaites, nulles, ratio). Lit directement dans le CSV.
+ * Exemple d'appel : historique_afficher_stats("alice");
+ */
+char *historique_afficher_stats(const char *pseudo);
+
+/*
+ * Affiche dans le terminal la liste de tous les IDs de parties
+ * auxquelles le joueur a participé, avec blanc/noir et résultat.
+ * Exemple d'appel : historique_afficher_parties("alice");
+ */
+char *historique_afficher_parties(const char *pseudo);
+
+/*
+ * Affiche les statistiques d'un joueur, puis la liste de ses parties.
+ * Regroupe les appels à historique_afficher_stats et
+ * historique_afficher_parties.
+ */
+char *historique_afficher_profil(const char *pseudo);
 
 #endif
