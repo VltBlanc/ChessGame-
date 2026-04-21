@@ -179,6 +179,20 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload, const char *u
         }
         return 0;
     }
+    else if (header->type == REQ_HISTORIQUE_PARTIE){
+        str_RequHistorique *req = (str_RequHistorique *)payload;
+        str_RepHistorique rep;
+        memset(&rep, 0, sizeof(rep));
+        rep.resultat = STATUS_OK;
+        strncpy(rep.username, username, sizeof(rep.username) - 1);
+        strncpy(rep.historique, historique_exporter_pgn(req->id_partie), sizeof(rep.historique) - 1);
+        if (send_message(dSC, REP_HISTORIQUE_PARTIE, &rep, sizeof(rep)) < 0) {
+            perror("Erreur pour envoyer REP_HISTORIQUE_PARTIE");
+            close(dSC);
+            pthread_exit(0);
+        }
+        return 0;
+    }
     else {
         printf("[serveur] type de requête inconnu : %d\n", header->type);
         return -1;

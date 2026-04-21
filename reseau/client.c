@@ -245,6 +245,39 @@ int traiter_requete_jeu(int dS, char *m){
             return -1;
         }   
     }
+    else if(strcmp(m, "historique partie") == 0){
+        str_RequHistorique req;
+        memset(&req, 0, sizeof(req));
+
+        printf("id partie : ");
+        scanf("%ld", &req.id_partie);
+        int c; while ((c = getchar()) != '\n' && c != EOF); // vider le buffer
+
+        if(send_message(dS, REQ_HISTORIQUE_PARTIE, &req, sizeof(req)) < 0){
+            perror("Erreur pour envoyer message");
+            close(dS);
+            return -1;
+        }
+        
+        // Recevoir la réponse du serveur
+        MsgHeader header;
+        str_RepHistorique rep;
+        memset(&rep, 0, sizeof(rep));
+
+        if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
+            perror("Erreur pour recevoir la réponse");
+            close(dS);
+            return -1;
+        }
+
+        if(rep.resultat == STATUS_OK){
+            printf("%s\n", rep.historique);
+            return 3; // doit etre different de 0 et 1
+        } else {
+            printf("Erreur : recherche échouée.\n");
+            return -1;
+        }   
+    }
     else{
         printf("Commande inconnue : %s\n", m);
         return -1;
