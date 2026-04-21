@@ -355,7 +355,6 @@ char *historique_afficher_parties(const char *pseudo) {
 
   const char *labels_resultat[] = {"Blanc gagne", "Noir gagne", "Nulle"};
   char ligne[256];
-  int nb_affichees = 0;
 
   size_t taille = 1024;
   size_t pos = 0;
@@ -405,7 +404,6 @@ char *historique_afficher_parties(const char *pseudo) {
 
       memcpy(res + pos, buf, len + 1);
       pos += len;
-      nb_affichees++;
     }
   }
 
