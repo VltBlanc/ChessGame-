@@ -33,8 +33,8 @@ typedef enum {
     REQ_GAME_OVER       = 12, // Client --> Serveur : la partie est terminée
 
     // mode spectateur
-    REQ_SEP             = 13,
-    REP_SEP             = 14,
+    REQ_SEP             = 17,
+    REP_SEP             = 18,
 
 } MsgType;
 

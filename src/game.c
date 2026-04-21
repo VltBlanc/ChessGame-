@@ -436,8 +436,8 @@ void game_network_play(int dS, int my_color) {
   } else if (my_color == 0) {
     engine_color = CHESS_BLACK;
   } else {
-    // Cas spectateur (my_color == -1)
-    engine_color = -1;
+    // Cas spectateur (my_color == 3)
+    engine_color = 3;
   }
 
   while (!WindowShouldClose()) {

@@ -186,12 +186,12 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload, const char *u
             str_RepSearch rep;
             memset(&rep, 0, sizeof(rep));
             rep.resultat = STATUS_OK;
-            rep.couleur = -1; // -1 indique le mode spectateur
+            rep.couleur = 3; // 3 indique le mode spectateur
             strncpy(rep.adversaire, rooms[room_idx].username_blanc, 31);
 
             send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
 
-            room_boucle_jeu(&rooms[room_idx], dSC, -1);
+            room_boucle_jeu(&rooms[room_idx], dSC, 3);
         } else {
             // Pas de room active trouvée
             str_RepSearch rep;
