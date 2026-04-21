@@ -90,7 +90,7 @@ int lancement_client(int argc, char *argv[]) {
 
     while (1) {
         memset(m, 0, sizeof(m));
-        printf("\ncommandes disponibles : chercher partie, quit\n");
+        printf("\ncommandes disponibles : chercher partie, historique, quit\n");
         printf("Entrer une commande : ");
         if (fgets(m, sizeof(m), stdin) == NULL) {
             break;
@@ -102,7 +102,7 @@ int lancement_client(int argc, char *argv[]) {
         }
 
         int couleur = traiter_requete_jeu(dS, m); 
-        if (couleur >= 0) {
+        if (couleur >= 0 && couleur <= 1) {
             game_network_play(dS, couleur);
         }
     }
@@ -214,6 +214,32 @@ int traiter_requete_jeu(int dS, char *m){
         if(rep.resultat == STATUS_OK){
             printf("recherche réussie ! Vous jouez les %s.\n", rep.couleur == 1 ? "BLANCS" : "NOIRS");
             return rep.couleur; // on retourne la couleur pour la boucle de jeu
+        } else {
+            printf("Erreur : recherche échouée.\n");
+            return -1;
+        }   
+    }
+    else if(strcmp(m, "historique") == 0){
+        if(send_message(dS, REQ_HISTORIQUE, NULL, 0) < 0){
+            perror("Erreur pour envoyer message");
+            close(dS);
+            return -1;
+        }
+        
+        // Recevoir la réponse du serveur
+        MsgHeader header;
+        str_RepHistorique rep;
+        memset(&rep, 0, sizeof(rep));
+
+        if(recv_message(dS, &header, &rep, sizeof(rep)) < 0){
+            perror("Erreur pour recevoir la réponse");
+            close(dS);
+            return -1;
+        }
+
+        if(rep.resultat == STATUS_OK){
+            printf("%s\n", rep.historique);
+            return 2; // doit etre different de 0 et 1
         } else {
             printf("Erreur : recherche échouée.\n");
             return -1;

@@ -31,6 +31,10 @@ typedef enum {
 
     // Fin de partie (mat, pat, nulle)
     REQ_GAME_OVER       = 12, // Client --> Serveur : la partie est terminée
+
+    //historique
+    REQ_HISTORIQUE      = 13, // Client --> Serveur : demande historique
+    REP_HISTORIQUE      = 14, // Serveur --> Client : réponse historique
 } MsgType;
 
 typedef enum {
@@ -107,6 +111,12 @@ typedef struct {
     int  couleur;        // 0 = noirs, 1 = blancs
 } str_RepSearch;
 
+// rep_historique
+typedef struct {
+    int resultat;        // StatusCode — STATUS_OK ou STATUS_ERR_MOVE
+    char historique[10000];
+    char username[32];
+} str_RepHistorique;
 
 // (Les structures redondantes en bas de fichier ont été supprimées car elles causaient des conflits et on préfère passer par les structs plus complètes définies plus haut)
 
