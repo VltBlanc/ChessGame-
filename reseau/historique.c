@@ -446,3 +446,8 @@ void stats_mettre_a_jour(historique_partie *h) {
   stats_ecrire(blanc);
   stats_ecrire(noir);
 }
+
+void historique_afficher_profil(const char *pseudo) {
+  historique_afficher_stats(pseudo);
+  historique_afficher_parties(pseudo);
+}

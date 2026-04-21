@@ -85,4 +85,10 @@ void historique_afficher_stats(const char *pseudo);
  */
 void historique_afficher_parties(const char *pseudo);
 
+/*
+ * Affiche les statistiques d'un joueur, puis la liste de ses parties.
+ * Regroupe les appels à historique_afficher_stats et historique_afficher_parties.
+ */
+void historique_afficher_profil(const char *pseudo);
+
 #endif
