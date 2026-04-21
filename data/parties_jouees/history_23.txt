@@ -1,0 +1,13 @@
+ID,NBR_COUPS,BLANC,NOIR,RESULTAT,RAISON
+23,11,luca,la,0,1
+e7e5 7
+c2c4 2
+g8f6 1
+b1c3 1
+d7d5 3
+c4d5 2
+f6d5 1
+f2f3 2
+c7c6 1
+g2g4 2
+d8h4 2

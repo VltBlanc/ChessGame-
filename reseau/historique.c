@@ -88,9 +88,16 @@ long *historique_lister_parties_joueur(const char *pseudo, int *nb_parties) {
 
 void historique_init(historique_partie *h, char *playerBlanc,
                      char *playerNoir) {
-  h->identifiant_partie =
-      (long)time(NULL) * 10000 +
-      (rand() % 10000); // identifiant unique (statistiquement... )
+  long id = 1;
+  FILE *f = fopen("data/index_parties.csv", "r");
+  if (f) {
+    char ligne[256];
+    while (fgets(ligne, sizeof(ligne), f))
+      id++;
+    fclose(f);
+  }
+
+  h->identifiant_partie = id;
   h->nbr_coups = 0;
   h->heure_debut = time(NULL);
   strcpy(h->joueur_blanc, playerBlanc);
