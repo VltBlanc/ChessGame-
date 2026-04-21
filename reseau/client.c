@@ -88,8 +88,7 @@ int lancement_client(int argc, char *argv[]) {
 
   while (1) {
     memset(m, 0, sizeof(m));
-    printf("\ncommandes disponibles : chercher partie, historique, historique "
-           "partie, quit\n");
+    printf("\ncommandes disponibles : play, stats, historique, quit\n");
     printf("Entrer une commande : ");
     if (fgets(m, sizeof(m), stdin) == NULL) {
       break;
@@ -194,7 +193,7 @@ int traiter_requete_debut(int dS, char *m) {
 }
 
 int traiter_requete_jeu(int dS, char *m) {
-  if (strcmp(m, "chercher partie") == 0) {
+  if (strcmp(m, "play") == 0) {
 
     printf("en attente de l'adversaire...\n");
     if (send_message(dS, REQ_SEARCH, NULL, 0) < 0) {
@@ -222,7 +221,7 @@ int traiter_requete_jeu(int dS, char *m) {
       printf("Erreur : recherche échouée.\n");
       return -1;
     }
-  } else if (strcmp(m, "historique") == 0) {
+  } else if (strcmp(m, "stats") == 0) {
     if (send_message(dS, REQ_HISTORIQUE, NULL, 0) < 0) {
       perror("Erreur pour envoyer message");
       close(dS);
@@ -247,12 +246,12 @@ int traiter_requete_jeu(int dS, char *m) {
       printf("Erreur : recherche échouée.\n");
       return -1;
     }
-  } else if (strcmp(m, "historique partie") == 0) {
+  } else if (strcmp(m, "historique") == 0) {
     str_RequHistorique req;
     memset(&req, 0, sizeof(req));
 
     printf("si vous ne connaisait pas l'id de la partie faite la commande "
-           "historique avant\n");
+           "stats avant\n");
     printf("id partie : ");
     scanf("%ld", &req.id_partie);
     int c;
@@ -278,7 +277,7 @@ int traiter_requete_jeu(int dS, char *m) {
 
     if (rep.resultat == STATUS_OK) {
       printf("%s\n", rep.historique);
-      return 4; // doit etre different de 0,1,2
+      return 4; // doit etre different de 0,1,2 et 3
     } else {
       printf("Erreur : recherche échouée.\n");
       return -1;
