@@ -242,7 +242,7 @@ int traiter_requete_jeu(int dS, char *m) {
 
     if (rep.resultat == STATUS_OK) {
       printf("%s\n", rep.historique);
-      return 2; // doit etre different de 0 et 1
+      return 3; // doit etre different de 0,1 et 2
     } else {
       printf("Erreur : recherche échouée.\n");
       return -1;
@@ -278,7 +278,7 @@ int traiter_requete_jeu(int dS, char *m) {
 
     if (rep.resultat == STATUS_OK) {
       printf("%s\n", rep.historique);
-      return 3; // doit etre different de 0 et 1
+      return 4; // doit etre different de 0,1,2
     } else {
       printf("Erreur : recherche échouée.\n");
       return -1;
