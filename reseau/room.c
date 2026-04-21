@@ -121,27 +121,40 @@ void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur) {
     // Attendre un message du client
     int type = recv_message(mon_socket, &header, buf, sizeof(buf));
     if (type <= 0 || header.type == REQ_RESIGN) {
-      printf("[room] déconnexion d'un joueur ou abandon\n");
 
+      // Si c'est un SPECTATEUR
+      if (ma_couleur == 3) {
+        printf("[room] Un spectateur a quitté la room. Le match continue.\n");
+        // On retire le spectateur de la liste pour libérer la place
+        pthread_mutex_lock(&room->mutex);
+        for (int i = 0; i < room->nb_spectateurs; i++) {
+          if (room->spectateurs[i] == mon_socket) {
+            room->spectateurs[i] = -1;
+          }
+        }
+        pthread_mutex_unlock(&room->mutex);
+        return; // On sort de la fonction pour ce thread UNIQUEMENT
+      }
+
+      // Si c'est un JOUEUR, alors on arrête la partie
+      printf("[room] Déconnexion d'un joueur ou abandon. Fin du match.\n");
       pthread_mutex_lock(&room->mutex);
       if (room->etat == 2) {
         int mon_index = (room->joueurs[0] == mon_socket) ? 0 : 1;
         int adversaire = room->joueurs[mon_index == 0 ? 1 : 0];
 
-        // Finaliser l'historique : celui qui abandonne perd
-        partie_resultat res = (mon_index == 0) ? RESULTAT_PARTIE_NOIR_WIN
-                                               : RESULTAT_PARTIE_WHITE_WIN;
+        partie_resultat res = (mon_index == 0) ? RESULTAT_PARTIE_NOIR_WIN : RESULTAT_PARTIE_WHITE_WIN;
         historique_finaliser(&room->hist, res, GAME_RESIGN);
 
         if (adversaire != -1) {
           str_RepResultatPartie rep;
           memset(&rep, 0, sizeof(rep));
           rep.raison = GAME_RESIGN;
-          rep.gagnant = mon_index == 0 ? 0 : 1; // 0=noir gagne, 1=blanc gagne
+          rep.gagnant = mon_index == 0 ? 0 : 1;
           send_message(adversaire, REP_RESULTAT_PARTIE, &rep, sizeof(rep));
         }
+        room->etat = 3; // TERMINEE seulement car c'est un joueur
       }
-      room->etat = 3; // TERMINEE
       pthread_mutex_unlock(&room->mutex);
       break;
     }
