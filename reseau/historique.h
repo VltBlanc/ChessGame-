@@ -2,94 +2,90 @@
 #define HISTORIQUE_H
 
 #include "../src/chess.h"
-
-/* Résultats possibles d'une partie */
+#include <time.h>
 typedef enum {
   RESULTAT_PARTIE_WHITE_WIN,
   RESULTAT_PARTIE_NOIR_WIN,
   RESULTAT_PARTIE_DRAW
 } partie_resultat;
 
-/* Structure principale pour stocker l'historique d'une partie */
+/* Données complètes d'une partie en mémoire */
 typedef struct {
-  long identifiant_partie;  /* ID unique basé sur le temps (timestamp) */
-  move_t coups[512];        /* Liste des coups joués */
-  time_t timestamps[512];   /* Horodatage de chaque coup */
-  int durees[512];          /* Durée en secondes de chaque coup */
-  int nbr_coups;            /* Nombre de coups enregistrés */
-  char joueur_blanc[32];    /* Nom du joueur blanc */
-  char joueur_noir[32];     /* Nom du joueur noir */
-  partie_resultat resultat; /* Gagnant ou match nul */
-  int raison;               /* Cause de la fin (mat, abandon, etc.) */
+  long identifiant_partie; /* ID unique généré à l'initialisation */
+  move_t coups[512];       /* Coups joués (max 512) */
+  time_t timestamps[512];  /* Horodatage de chaque coup */
+  int durees[512];         /* Durée en secondes par coup */
+  int nbr_coups;           /* Nombre de coups enregistrés */
+  char joueur_blanc[32];
+  char joueur_noir[32];
+  partie_resultat resultat;
+  int raison; /* Cause de fin (mat, abandon, etc.) */
   time_t heure_debut;
 } historique_partie;
 
-/* Statistiques d'un joueur */
+/* Statistiques cumulées d'un joueur (ratio = victoires / total) */
 typedef struct {
   char pseudo[32];
   int victoires;
   int defaites;
   int nulles;
-  float ratio; /* victoires / total parties jouées */
+  float ratio;
 } stats_joueur;
 
-/* Lit les stats d'un joueur depuis un CSV  */
-stats_joueur stats_lire(const char *pseudo);
+/*  CYCLE DE VIE  —  init → enregistrer_coup (×N) → finaliser  */
 
-/* Met à jour le CSV pour un joueur  */
-void stats_ecrire(stats_joueur s);
-
-/* Met à jour les stats des deux joueurs après une partie */
-void stats_mettre_a_jour(historique_partie *h);
-
-/* Convertit un coup move_t en texte (ex: e2e4) */
-void notation_algebrique(move_t move, char *buffer);
-
-/* Initialise l'historique avec les noms des joueurs et génère l'ID */
+/* Initialise une nouvelle partie (ID, pseudos, heure de début) */
 void historique_init(historique_partie *h, char *playerBlanc, char *playerNoir);
 
-/* Ajoute un nouveau coup dans le tableau de l'historique en mémoire */
+/* Ajoute un coup en mémoire. Retourne -1 si limite 512 atteinte */
 int historique_enregistrer_coup(move_t coup, historique_partie *h);
 
-/* Finalise l'historique : enregistre résultat, sauvegarde et met à jour les
- * stats */
+/* Clôture la partie : sauvegarde + mise à jour des stats */
 void historique_finaliser(historique_partie *h, partie_resultat resultat,
                           int raison);
 
-/* Sauvegarde la partie (détails + index centralisé) */
+/* Persistance */
+
+/* Sauvegarde dans data/parties_jouees/history_<ID>.txt. Retourne 0 ou -1 */
 int historique_sauvegarder(historique_partie *h);
 
-/* Charge une partie complète depuis son fichier .txt via son ID */
+/* Charge une partie par son ID. Retourne 0 ou -1 si introuvable */
 int historique_charger(historique_partie *h, long id_partie);
 
-/* Ajoute une entrée résumée dans le fichier index_parties.csv */
+/* Ajoute une ligne résumée dans data/index_parties.csv */
 void historique_ajouter_index(historique_partie *h);
 
-/* Récupère la liste des IDs de parties pour un pseudo donné depuis l'index */
+/* Consultation */
+
+/* Retourne les IDs de parties d'un joueur (tableau à free() par l'appelant) */
 long *historique_lister_parties_joueur(const char *pseudo, int *nb_parties);
 
-/* Exporte la partie au format PGN pour les logiciels d'échecs tiers */
+/* Retourne la partie au format PGN (chaîne à free() par l'appelant) */
 char *historique_exporter_pgn(long id);
 
-/*
- * Affiche dans le terminal les statistiques d'un joueur (victoires,
- * défaites, nulles, ratio). Lit directement dans le CSV.
- * Exemple d'appel : historique_afficher_stats("alice");
- */
+/* Convertit un move_t en texte (ex: "e2e4"). buffer >= 6 octets */
+void notation_algebrique(move_t move, char *buffer);
+
+/* STATISTIQUES */
+
+/* Lit les stats depuis le CSV. Retourne une struct à zéro si inconnu */
+stats_joueur stats_lire(const char *pseudo);
+
+/* Met à jour (ou crée) la ligne du joueur dans le CSV */
+void stats_ecrire(stats_joueur s);
+
+/* Met à jour les stats des deux joueurs (appelé par historique_finaliser) */
+void stats_mettre_a_jour(historique_partie *h);
+
+/* AFFICHAGE  —  toutes les chaînes retournées sont à free() par l'appelant */
+
+/* Stats du joueur (parties, victoires, défaites, nulles, ratio) */
 char *historique_afficher_stats(const char *pseudo);
 
-/*
- * Affiche dans le terminal la liste de tous les IDs de parties
- * auxquelles le joueur a participé, avec blanc/noir et résultat.
- * Exemple d'appel : historique_afficher_parties("alice");
- */
+/* Liste des parties du joueur (ID, blanc, noir, résultat) */
 char *historique_afficher_parties(const char *pseudo);
 
-/*
- * Affiche les statistiques d'un joueur, puis la liste de ses parties.
- * Regroupe les appels à historique_afficher_stats et
- * historique_afficher_parties.
- */
+/* Combine afficher_stats + afficher_parties */
 char *historique_afficher_profil(const char *pseudo);
 
 #endif

@@ -1,0 +1,11 @@
+ID,NBR_COUPS,BLANC,NOIR,RESULTAT,RAISON
+24,9,yoda,la,0,1
+e7e5 37
+e2e4 17
+g8f6 4
+b2b4 1
+f6g4 2
+c2c4 15
+d8f6 1
+a2a4 2
+f6f2 1
