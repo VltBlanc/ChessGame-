@@ -90,20 +90,21 @@ int lancement_client(int argc, char *argv[]) {
 
     while (1) {
         memset(m, 0, sizeof(m));
-        printf("\ncommandes disponibles : chercher partie, quit\n");
+        printf("\ncommandes disponibles : chercher partie, cherche partie sep, quit\n");
         printf("Entrer une commande : ");
-        if (fgets(m, sizeof(m), stdin) == NULL) {
-            break;
-        }
+
+        if (fgets(m, sizeof(m), stdin) == NULL) break;
         m[strcspn(m, "\n")] = '\0';
 
-        if (strcmp(m, "quit") == 0) {
-            break;
-        }
+        if (strcmp(m, "quit") == 0) break;
 
-        int couleur = traiter_requete_jeu(dS, m); 
-        if (couleur >= 0) {
-            game_network_play(dS, couleur);
+        // On récupère la couleur (1, 0) ou le mode spectateur (-1)
+        int couleur_ou_mode = traiter_requete_jeu(dS, m);
+
+        // On lance la fenêtre de jeu
+        if (couleur_ou_mode >= -1) {
+            printf("[client] Lancement de l'interface graphique...\n");
+            game_network_play(dS, couleur_ou_mode);
         }
     }
 
@@ -219,12 +220,37 @@ int traiter_requete_jeu(int dS, char *m){
             return -1;
         }   
     }
-    else{
-        printf("Commande inconnue : %s\n", m);
-        return -1;
-    }
-}
 
+    else if (strcmp(m, "cherche partie sep") == 0) {
+        printf("Recherche d'une partie en tant que spectateur...\n");
+
+        if (send_message(dS, REQ_SEP, NULL, 0) < 0) {
+            perror("Erreur envoi REQ_SEP");
+            return -1;
+        }
+
+        MsgHeader header;
+        str_RepSearch rep;
+        memset(&rep, 0, sizeof(rep));
+
+        if (recv_message(dS, &header, &rep, sizeof(rep)) < 0) {
+            perror("Erreur pour recevoir la réponse spectateur");
+            return -1;
+        }
+
+        if (rep.resultat == STATUS_OK) {
+            printf("Mode spectateur activé sur la partie contre : %s\n", rep.adversaire);
+            return -1; // Indique au moteur de jeu qu'on est spectateur
+        } else {
+            printf("Aucune partie en cours à observer.\n");
+            return -2; // Code d'erreur spécifique pour éviter de lancer la boucle de jeu
+        }
+    }
+
+    // Cas par défaut : commande inconnue ou échec
+    printf("Commande inconnue ou erreur : %s\n", m);
+    return -2;
+}
 
 
 int main(int argc, char *argv[]) {
