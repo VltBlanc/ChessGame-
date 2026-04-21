@@ -198,7 +198,6 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload,
             send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
         }
         return 0;
-    }
 
   } else if (header->type == REQ_HISTORIQUE) {
     str_RepHistorique rep;
@@ -213,7 +212,8 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload,
       pthread_exit(0);
     }
     return 0;
-  } else if (header->type == REQ_HISTORIQUE_PARTIE) {
+  } 
+  else if (header->type == REQ_HISTORIQUE_PARTIE) {
     str_RequHistorique *req = (str_RequHistorique *)payload;
     str_RepHistorique rep;
     memset(&rep, 0, sizeof(rep));
