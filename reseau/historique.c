@@ -198,7 +198,7 @@ int historique_charger(historique_partie *h, long id_partie) {
 char *historique_exporter_pgn(long id) {
   historique_partie h;
   if (historique_charger(&h, id) != 0)
-    return NULL;
+    return "Partie non trouvée\n";
 
   char *resultat_str = "*";
   if (h.resultat == RESULTAT_PARTIE_WHITE_WIN)
