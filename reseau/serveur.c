@@ -166,40 +166,54 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload,
     return 0;
   }
   else if (header->type == REQ_SEP) {
-        printf("[serveur] %s veut être spectateur.\n", username);
+    // Le payload contient l'ID de la room (envoyé par le spectateur)
+    int room_voulue = *(int*)payload;
 
-        // On cherche une room active (etat == 2)
-        int room_idx = -1;
-        pthread_mutex_lock(&mutex_rooms);
-        for (int i = 0; i < nb_rooms; i++) {
-            if (rooms[i].etat == 2) {
-                room_idx = i;
-                break;
-            }
-        }
-        pthread_mutex_unlock(&mutex_rooms);
+    pthread_mutex_lock(&mutex_rooms);
+    // Vérification de validité
+    if (room_voulue >= 0 && room_voulue < nb_rooms && rooms[room_voulue].etat == 2) {
+      pthread_mutex_unlock(&mutex_rooms);
 
-        if (room_idx != -1) {
-            room_rejoindre_spectateur(&rooms[room_idx], dSC);
+      int res = room_rejoindre_spectateur(&rooms[room_voulue], dSC);
 
-            str_RepSearch rep;
-            memset(&rep, 0, sizeof(rep));
-            rep.resultat = STATUS_OK;
-            rep.couleur = 3; // 3 indique le mode spectateur
-            strncpy(rep.adversaire, rooms[room_idx].username_blanc, 31);
+      str_RepSearch rep;
+      memset(&rep, 0, sizeof(rep));
 
-            send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
+      if (res == 0) {
+        rep.resultat = STATUS_OK;
+        rep.couleur = 3; // Mode spectateur
+        strncpy(rep.adversaire, rooms[room_voulue].username_blanc, 31);
+        send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
+        room_boucle_jeu(&rooms[room_voulue], dSC, 3);
+      } else {
+        rep.resultat = STATUS_ERR_AUTH; // Room pleine
+        send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
+      }
+    } else {
+      pthread_mutex_unlock(&mutex_rooms);
+      // Room invalide ou non commencée
+      str_RepSearch rep;
+      rep.resultat = STATUS_ERR_AUTH;
+      send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
+    }
+    return 0;
+  }
+  else if (header->type == REQ_LIST_ROOMS) {
+    str_RepSimpleList rep;
+    memset(&rep, 0, sizeof(rep));
 
-            room_boucle_jeu(&rooms[room_idx], dSC, 3);
-        } else {
-            // Pas de room active trouvée
-            str_RepSearch rep;
-            rep.resultat = STATUS_ERR_AUTH; // Ou un code d'erreur dédié
-            send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
-        }
-        return 0;
+    pthread_mutex_lock(&mutex_rooms);
+    // On parcourt toutes les rooms créées
+    for (int i = 0; i < nb_rooms; i++) {
+      rep.indices[i] = i; // On stocke l'indice
+    }
+    rep.nb_actives = nb_rooms; // On indique combien il y en a
+    pthread_mutex_unlock(&mutex_rooms);
 
-  } else if (header->type == REQ_HISTORIQUE) {
+    send_message(dSC, REP_LIST_ROOMS, &rep, sizeof(rep));
+    return 0;
+  }
+  else if (header->type == REQ_HISTORIQUE) {
     str_RepHistorique rep;
     memset(&rep, 0, sizeof(rep));
     rep.resultat = STATUS_OK;

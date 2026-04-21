@@ -289,9 +289,35 @@ int traiter_requete_jeu(int dS, char *m) {
     }
   }
   else if (strcmp(m, "spectate") == 0) {
-        printf("Recherche d'une partie en tant que spectateur...\n");
+         send_message(dS, REQ_LIST_ROOMS, NULL, 0);
 
-        if (send_message(dS, REQ_SEP, NULL, 0) < 0) {
+         MsgHeader header_list;
+         str_RepSimpleList liste;
+         if (recv_message(dS, &header_list, &liste, sizeof(liste)) < 0) return -1;
+
+         if (liste.nb_actives == 0) {
+              printf("Aucune room n'est créée.\n");
+              return -1;
+         }
+
+         printf("les numéro des rooms créées : [");
+         for (int i = 0; i < liste.nb_actives; i++) {
+               printf("%d%s", liste.indices[i], (i < liste.nb_actives - 1) ? ", " : "");
+         }
+         printf("]\n");
+         int room_id;
+         printf("Entrez le numéro de la room à observer : ");
+         if (scanf("%d", &room_id) != 1) {
+               printf("Erreur : Saisie invalide.\n");
+               while (getchar() != '\n');
+               return -1;
+         }
+         while (getchar() != '\n');
+
+         printf("Demande d'observation de la room %d...\n", room_id);
+
+
+        if (send_message(dS, REQ_SEP, &room_id, sizeof(int)) < 0) {
             perror("Erreur envoi REQ_SEP");
             return -1;
         }

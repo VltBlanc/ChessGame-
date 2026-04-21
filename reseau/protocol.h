@@ -43,6 +43,10 @@ typedef enum {
     //historique
     REQ_HISTORIQUE_PARTIE      = 15, // Client --> Serveur : demande historique
     REP_HISTORIQUE_PARTIE      = 16, // Serveur --> Client : réponse historique
+
+    // Dans l'énumération MsgType
+    REQ_LIST_ROOMS = 19, // Demander la liste des rooms
+    REP_LIST_ROOMS = 20, // Recevoir la liste
 } MsgType;
 
 typedef enum {
@@ -130,6 +134,11 @@ typedef struct {
 typedef struct {
     long id_partie;
 } str_RequHistorique;
+
+typedef struct {
+    int nb_actives;
+    int indices[100];
+} str_RepSimpleList;
 
 // (Les structures redondantes en bas de fichier ont été supprimées car elles causaient des conflits et on préfère passer par les structs plus complètes définies plus haut)
 
