@@ -90,7 +90,7 @@ int lancement_client(int argc, char *argv[]) {
 
     while (1) {
         memset(m, 0, sizeof(m));
-        printf("\ncommandes disponibles : chercher partie, historique, quit\n");
+        printf("\ncommandes disponibles : chercher partie, historique,historique partie, quit\n");
         printf("Entrer une commande : ");
         if (fgets(m, sizeof(m), stdin) == NULL) {
             break;
