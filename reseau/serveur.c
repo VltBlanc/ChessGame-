@@ -166,6 +166,40 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload, const char *u
         room_boucle_jeu(room, dSC, couleur);
         return 0;
     }
+    else if (header->type == REQ_SEP) {
+        printf("[serveur] %s veut être spectateur.\n", username);
+
+        // On cherche une room active (etat == 2)
+        int room_idx = -1;
+        pthread_mutex_lock(&mutex_rooms);
+        for (int i = 0; i < nb_rooms; i++) {
+            if (rooms[i].etat == 2) {
+                room_idx = i;
+                break;
+            }
+        }
+        pthread_mutex_unlock(&mutex_rooms);
+
+        if (room_idx != -1) {
+            room_rejoindre_spectateur(&rooms[room_idx], dSC);
+
+            str_RepSearch rep;
+            memset(&rep, 0, sizeof(rep));
+            rep.resultat = STATUS_OK;
+            rep.couleur = -1; // -1 indique le mode spectateur
+            strncpy(rep.adversaire, rooms[room_idx].username_blanc, 31);
+
+            send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
+
+            room_boucle_jeu(&rooms[room_idx], dSC, -1);
+        } else {
+            // Pas de room active trouvée
+            str_RepSearch rep;
+            rep.resultat = STATUS_ERR_AUTH; // Ou un code d'erreur dédié
+            send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
+        }
+        return 0;
+    }
     else {
         printf("[serveur] type de requête inconnu : %d\n", header->type);
         return -1;
