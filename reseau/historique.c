@@ -340,7 +340,7 @@ char *historique_afficher_stats(const char *pseudo) {
     snprintf(ratio_ligne, sizeof(ratio_ligne),
              "║  Ratio          : N/A       ║\n");
 
-  snprintf(res, 512,
+  snprintf(res, 1024,
            "\n╔══════════════════════════════╗\n"
            "║  Statistiques : %-12s║\n"
            "╠══════════════════════════════╣\n"

@@ -200,7 +200,7 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload,
         return 0;
     }
 
-  } else if (header->type == REQ_HISTORIQUE) {
+  else if (header->type == REQ_HISTORIQUE) {
     str_RepHistorique rep;
     memset(&rep, 0, sizeof(rep));
     rep.resultat = STATUS_OK;
