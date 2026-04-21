@@ -76,19 +76,20 @@ int historique_exporter_pgn(historique_partie *h, const char *nom_fichier);
  * défaites, nulles, ratio). Lit directement dans le CSV.
  * Exemple d'appel : historique_afficher_stats("alice");
  */
-void historique_afficher_stats(const char *pseudo);
+char *historique_afficher_stats(const char *pseudo);
 
 /*
  * Affiche dans le terminal la liste de tous les IDs de parties
  * auxquelles le joueur a participé, avec blanc/noir et résultat.
  * Exemple d'appel : historique_afficher_parties("alice");
  */
-void historique_afficher_parties(const char *pseudo);
+char *historique_afficher_parties(const char *pseudo);
 
 /*
  * Affiche les statistiques d'un joueur, puis la liste de ses parties.
- * Regroupe les appels à historique_afficher_stats et historique_afficher_parties.
+ * Regroupe les appels à historique_afficher_stats et
+ * historique_afficher_parties.
  */
-void historique_afficher_profil(const char *pseudo);
+char *historique_afficher_profil(const char *pseudo);
 
 #endif
