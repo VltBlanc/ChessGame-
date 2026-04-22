@@ -61,7 +61,7 @@ void chess_move(const chess_state_t *state, move_t *choices, int count, int *ind
                                .g = (SQUARE_MOVE & 0x00FF00) >> 8,
                                .b = (SQUARE_MOVE & 0x0000FF) >> 0,
                                .a = 0xFF};
-                DrawCircle(px.x + cell_width / 2.0f, px.y + cell_height / 2.0f, cell_width / 4.0f, color);
+                DrawCircle(px.x + (cell_width / 2.0f) - 15.0f, px.y + cell_height / 2.0f, cell_width / 8.0f, color);
             }
         }
     }

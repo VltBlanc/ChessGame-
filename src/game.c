@@ -88,7 +88,7 @@ static void draw_chat_panel() {
             DrawRectangle(BOARD_SIZE + 10 + tw, input_y, 2, 16, GOLD);
         }
     } else {
-        DrawText("Appuyez sur T pour parler...", BOARD_SIZE + 10, input_y, 14, GRAY);
+        DrawText("Appuyez sur ESPACE pour parler...", BOARD_SIZE + 10, input_y, 14, GRAY);
     }
 }
 
@@ -422,7 +422,7 @@ void tick_network(int dS, int my_color) {
 
   // Gestion saisie Chat
   if (!chat_active) {
-      if (IsKeyPressed(KEY_T) && my_color != 3) {
+      if (IsKeyPressed(KEY_SPACE) && my_color != 3) {
           chat_active = 1;
           chat_input_len = 0;
           memset(chat_input, 0, sizeof(chat_input));
