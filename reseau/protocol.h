@@ -47,6 +47,10 @@ typedef enum {
     // Dans l'énumération MsgType
     REQ_LIST_ROOMS = 19, // Demander la liste des rooms
     REP_LIST_ROOMS = 20, // Recevoir la liste
+
+    // Chat
+    REQ_CHAT       = 21, // Client --> Serveur : message chat
+    REP_CHAT       = 22, // Serveur --> Client : broadcast message chat
 } MsgType;
 
 typedef enum {
@@ -139,6 +143,19 @@ typedef struct {
     int nb_actives;
     int indices[100];
 } str_RepSimpleList;
+
+// REQ_CHAT (client --> serveur)
+typedef struct {
+    char msg[200];         // Contenu du message
+} str_ReqChat;
+
+// REP_CHAT (serveur --> tous les membres de la room)
+typedef struct {
+    char username[32];     // Auteur du message
+    char msg[200];         // Contenu du message
+    short heure;           // Horodatage
+    short minute;
+} str_RepChat;
 
 // (Les structures redondantes en bas de fichier ont été supprimées car elles causaient des conflits et on préfère passer par les structs plus complètes définies plus haut)
 

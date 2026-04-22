@@ -18,8 +18,83 @@ static int is_in_check = 0;
 
 static ds_dynamic_array moves = {0}; /* move_t */
 
+// --- Variables Chat ---
+#define MAX_CHAT_MSGS 25
+typedef struct {
+    char username[32];
+    char msg[200];
+    short heure;
+    short minute;
+} ChatEntry;
+
+static ChatEntry chat_log[MAX_CHAT_MSGS];
+static int chat_count = 0;
+static char chat_input[200] = {0};
+static int chat_input_len = 0;
+static int chat_active = 0; // 1 si on est en train d'écrire
+
+static void add_chat_message(str_RepChat *rep) {
+    if (chat_count < MAX_CHAT_MSGS) {
+        strncpy(chat_log[chat_count].username, rep->username, 31);
+        strncpy(chat_log[chat_count].msg, rep->msg, 199);
+        chat_log[chat_count].heure = rep->heure;
+        chat_log[chat_count].minute = rep->minute;
+        chat_count++;
+    } else {
+        // Décalage pour simuler une file
+        for (int i = 0; i < MAX_CHAT_MSGS - 1; i++) {
+            chat_log[i] = chat_log[i + 1];
+        }
+        strncpy(chat_log[MAX_CHAT_MSGS - 1].username, rep->username, 31);
+        strncpy(chat_log[MAX_CHAT_MSGS - 1].msg, rep->msg, 199);
+        chat_log[MAX_CHAT_MSGS - 1].heure = rep->heure;
+        chat_log[MAX_CHAT_MSGS - 1].minute = rep->minute;
+    }
+}
+
+static void draw_chat_panel() {
+    // Fond du panneau
+    DrawRectangle(BOARD_SIZE, 0, CHAT_PANEL_WIDTH, SCREEN_HEIGHT, (Color){40, 44, 52, 255});
+    DrawLine(BOARD_SIZE, 0, BOARD_SIZE, SCREEN_HEIGHT, DARKGRAY);
+
+    DrawText("CHAT ROOM", BOARD_SIZE + 10, 10, 20, RAYWHITE);
+    DrawLine(BOARD_SIZE + 10, 35, BOARD_SIZE + CHAT_PANEL_WIDTH - 10, 35, GRAY);
+
+    // Affichage des messages
+    int start_y = 50;
+    for (int i = 0; i < chat_count; i++) {
+        char time_str[10];
+        snprintf(time_str, sizeof(time_str), "[%02d:%02d]", chat_log[i].heure, chat_log[i].minute);
+        
+        DrawText(time_str, BOARD_SIZE + 10, start_y, 12, LIGHTGRAY);
+        DrawText(chat_log[i].username, BOARD_SIZE + 65, start_y, 13, GOLD);
+        
+        // Message avec retour à la ligne simple
+        DrawText(chat_log[i].msg, BOARD_SIZE + 10, start_y + 15, 14, WHITE);
+        
+        start_y += 40;
+    }
+
+    // Zone de saisie
+    int input_y = SCREEN_HEIGHT - 40;
+    DrawRectangle(BOARD_SIZE + 5, input_y - 5, CHAT_PANEL_WIDTH - 10, 35, chat_active ? (Color){60, 64, 72, 255} : (Color){50, 54, 62, 255});
+    DrawRectangleLines(BOARD_SIZE + 5, input_y - 5, CHAT_PANEL_WIDTH - 10, 35, chat_active ? GOLD : DARKGRAY);
+
+    if (chat_active) {
+        DrawText(chat_input, BOARD_SIZE + 10, input_y, 16, RAYWHITE);
+        // Curseur clignotant
+        if ((int)(GetTime() * 2) % 2 == 0) {
+            int tw = MeasureText(chat_input, 16);
+            DrawRectangle(BOARD_SIZE + 10 + tw, input_y, 2, 16, GOLD);
+        }
+    } else {
+        DrawText("Appuyez sur T pour parler...", BOARD_SIZE + 10, input_y, 14, GRAY);
+    }
+}
+
+
 static void chess_print_board() {
-    int cell_width = SCREEN_WIDTH / CHESS_WIDTH;
+    int cell_width = BOARD_SIZE / CHESS_WIDTH;
     int cell_height = SCREEN_HEIGHT / CHESS_HEIGHT;
 
     square_t king_square = {0};
@@ -119,7 +194,7 @@ static void chess_print_state() {
 }
 
 static void chess_print_message(const char *text) {
-    int col_px = SCREEN_WIDTH / 2 - PROMOTION_GUI_WIDTH / 2;
+    int col_px = BOARD_SIZE / 2 - PROMOTION_GUI_WIDTH / 2;
     int row_px = SCREEN_HEIGHT / 2 - PROMOTION_GUI_HEIGHT / 2;
 
     Color color = {.r = (0xFF0000 & 0xFF0000) >> 16,
@@ -137,7 +212,7 @@ static void chess_print_message(const char *text) {
 
     DrawText(text, text_x, text_y, 20, WHITE);
   
-  const char *subtext = "Appuyez sur ESPACE pour quitter";
+  const char *subtext = "Appuyez sur ECHAP pour quitter";
   int subtext_width = MeasureText(subtext, 15);
   int subtext_x = col_px + PROMOTION_GUI_WIDTH / 2 - subtext_width / 2;
   int subtext_y = text_y + 25;
@@ -267,6 +342,9 @@ void tick_network(int dS, int my_color) {
       } else {
         draw_gui = 1;
       }
+    } else if (header.type == REP_CHAT) {
+      str_RepChat *rep = (str_RepChat *)buf;
+      add_chat_message(rep);
     } else if (header.type == REP_MOVE) {
       str_RepMove *rep = (str_RepMove *)buf;
 
@@ -342,7 +420,46 @@ void tick_network(int dS, int my_color) {
     }
   }
 
+  // Gestion saisie Chat
+  if (!chat_active) {
+      if (IsKeyPressed(KEY_T) && my_color != 3) {
+          chat_active = 1;
+          chat_input_len = 0;
+          memset(chat_input, 0, sizeof(chat_input));
+      }
+  } else {
+      int key = GetCharPressed();
+      while (key > 0) {
+          if ((key >= 32) && (key <= 125) && (chat_input_len < 190)) {
+              chat_input[chat_input_len] = (char)key;
+              chat_input_len++;
+          }
+          key = GetCharPressed();
+      }
+
+      if (IsKeyPressed(KEY_BACKSPACE)) {
+          if (chat_input_len > 0) {
+              chat_input_len--;
+              chat_input[chat_input_len] = '\0';
+          }
+      }
+
+      if (IsKeyPressed(KEY_ENTER)) {
+          if (chat_input_len > 0) {
+              str_ReqChat req;
+              strncpy(req.msg, chat_input, 199);
+              send_message(dS, REQ_CHAT, &req, sizeof(req));
+          }
+          chat_active = 0;
+      }
+
+      if (IsKeyPressed(KEY_ESCAPE)) {
+          chat_active = 0;
+      }
+  }
+
   chess_print_board();
+  draw_chat_panel();
     if (checkmate_gui == 1) {
         chess_print_message("Checkmate!");
     } else if (stalemate_gui == 1) {
@@ -436,6 +553,11 @@ void game_network_play(int dS, int my_color) {
     init(NULL, 0);
     state_init(CHESS_START);
 
+  // Réinitialiser le chat
+  chat_count = 0;
+  chat_active = 0;
+  memset(chat_input, 0, sizeof(chat_input));
+
   // Réinitialiser les flags d'affichage pour la nouvelle partie
   checkmate_gui = 0;
   stalemate_gui = 0;
@@ -456,7 +578,7 @@ void game_network_play(int dS, int my_color) {
 
     while (!WindowShouldClose()) {
         tick_network(dS, engine_color);
-    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER)) {
+    if (IsKeyPressed(KEY_ESCAPE)) {
       break;
     }
     }

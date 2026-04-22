@@ -162,7 +162,7 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload,
            couleur ? "blanc" : "noir");
 
     // Phase 3 : Boucle de jeu — relayer les coups
-    room_boucle_jeu(room, dSC, couleur);
+    room_boucle_jeu(room, dSC, couleur, username);
     return 0;
   }
   else if (header->type == REQ_SEP) {
@@ -184,7 +184,7 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload,
         rep.couleur = 3; // Mode spectateur
         strncpy(rep.adversaire, rooms[room_voulue].username_blanc, 31);
         send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
-        room_boucle_jeu(&rooms[room_voulue], dSC, 3);
+        room_boucle_jeu(&rooms[room_voulue], dSC, 3, "spectateur");
       } else {
         rep.resultat = STATUS_ERR_AUTH; // Room pleine
         send_message(dSC, REP_SEARCH, &rep, sizeof(rep));
