@@ -203,11 +203,15 @@ int traiter_requete_jeu(int dSC, MsgHeader *header, void *payload,
     memset(&rep, 0, sizeof(rep));
 
     pthread_mutex_lock(&mutex_rooms);
-    // On parcourt toutes les rooms créées
+    // Ne lister que les rooms en cours de jeu (etat == 2)
+    int count = 0;
     for (int i = 0; i < nb_rooms; i++) {
-      rep.indices[i] = i; // On stocke l'indice
+      if (rooms[i].etat == 2) {
+        rep.indices[count] = i;
+        count++;
+      }
     }
-    rep.nb_actives = nb_rooms; // On indique combien il y en a
+    rep.nb_actives = count;
     pthread_mutex_unlock(&mutex_rooms);
 
     send_message(dSC, REP_LIST_ROOMS, &rep, sizeof(rep));

@@ -260,6 +260,12 @@ void tick_network(int dS, int my_color) {
       str_RepResultatPartie *rep = (str_RepResultatPartie *)buf;
       if (rep->raison == GAME_RESIGN) {
         opponent_quit_gui = 1;
+      } else if (rep->raison == GAME_CHECKMATE) {
+        checkmate_gui = 1;
+      } else if (rep->raison == GAME_STALEMATE) {
+        stalemate_gui = 1;
+      } else {
+        draw_gui = 1;
       }
     } else if (header.type == REP_MOVE) {
       str_RepMove *rep = (str_RepMove *)buf;
@@ -301,28 +307,35 @@ void tick_network(int dS, int my_color) {
           if (checkmate_gui == 0 &&
               chess_is_checkmate(&state, state.current_player)) {
             checkmate_gui = 1;
-            str_ReqGameOver go;
-            memset(&go, 0, sizeof(go));
-            go.raison = GAME_CHECKMATE;
-            // celui qui a mater l'adversaire gagne
-            go.gagnant = (my_color == CHESS_WHITE) ? 1 : 0; 
-            send_message(dS, REQ_GAME_OVER, &go, sizeof(go));
+            // Seul un joueur signale la fin de partie au serveur
+            if (my_color != 3) {
+              str_ReqGameOver go;
+              memset(&go, 0, sizeof(go));
+              go.raison = GAME_CHECKMATE;
+              // celui qui a mater l'adversaire gagne
+              go.gagnant = (my_color == CHESS_WHITE) ? 1 : 0; 
+              send_message(dS, REQ_GAME_OVER, &go, sizeof(go));
+            }
           } else if (stalemate_gui == 0 &&
                      chess_is_stalemate(&state, state.current_player)) {
             stalemate_gui = 1;
-            str_ReqGameOver go;
-            memset(&go, 0, sizeof(go));
-            go.raison = GAME_STALEMATE;
-            go.gagnant = 2; // nul
-            send_message(dS, REQ_GAME_OVER, &go, sizeof(go));
+            if (my_color != 3) {
+              str_ReqGameOver go;
+              memset(&go, 0, sizeof(go));
+              go.raison = GAME_STALEMATE;
+              go.gagnant = 2; // nul
+              send_message(dS, REQ_GAME_OVER, &go, sizeof(go));
+            }
           } else if (draw_gui == 0 &&
                      chess_is_draw(&state, state.current_player)) {
             draw_gui = 1;
-            str_ReqGameOver go;
-            memset(&go, 0, sizeof(go));
-            go.raison = GAME_DRAW_50;
-            go.gagnant = 2; // nul
-            send_message(dS, REQ_GAME_OVER, &go, sizeof(go));
+            if (my_color != 3) {
+              str_ReqGameOver go;
+              memset(&go, 0, sizeof(go));
+              go.raison = GAME_DRAW_50;
+              go.gagnant = 2; // nul
+              send_message(dS, REQ_GAME_OVER, &go, sizeof(go));
+            }
           }
         }
       }
@@ -339,7 +352,8 @@ void tick_network(int dS, int my_color) {
     } else if (opponent_quit_gui == 1) {
         chess_print_message("Opponent Quit!");
     } else {
-        if (state.current_player == my_color) {
+        // Interaction joueur : seulement si on n'est PAS spectateur
+        if (my_color != 3 && state.current_player == my_color) {
             int index = -1;
             chess_move(&state, moves.items, moves.count, &index);
 
