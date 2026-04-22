@@ -47,6 +47,6 @@ int room_demarre(Room *room);
 int room_rejoindre_file(int socket, const char *username);
 
 // Boucle de jeu : relaye les coups entre les 2 joueurs
-void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur);
+void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur, const char *username);
 
 #endif // ROOM_H

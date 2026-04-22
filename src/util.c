@@ -119,7 +119,7 @@ int long_compare(const void *k1, const void *k2) {
 }
 
 void px_to_square(Vector2 *px, square_t *square) {
-    int cell_width = SCREEN_WIDTH / CHESS_WIDTH;
+    int cell_width = BOARD_SIZE / CHESS_WIDTH;
     int cell_height = SCREEN_HEIGHT / CHESS_HEIGHT;
 
     square->file = (int)px->x / cell_width;
@@ -127,7 +127,7 @@ void px_to_square(Vector2 *px, square_t *square) {
 }
 
 void square_to_px(square_t *square, Vector2 *px) {
-    int cell_width = SCREEN_WIDTH / CHESS_WIDTH;
+    int cell_width = BOARD_SIZE / CHESS_WIDTH;
     int cell_height = SCREEN_HEIGHT / CHESS_HEIGHT;
 
     px->x = square->file * cell_width;
@@ -135,7 +135,7 @@ void square_to_px(square_t *square, Vector2 *px) {
 }
 
 int px_to_option(Vector2 *px) {
-    int col_px = SCREEN_WIDTH / 2 - PROMOTION_GUI_WIDTH / 2;
+    int col_px = BOARD_SIZE / 2 - PROMOTION_GUI_WIDTH / 2;
     int row_px = SCREEN_HEIGHT / 2 - PROMOTION_GUI_HEIGHT / 2;
 
     if (px->x < col_px || px->x > col_px + PROMOTION_GUI_WIDTH || px->y < row_px || px->y > row_px + PROMOTION_GUI_HEIGHT) {

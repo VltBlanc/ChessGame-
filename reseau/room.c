@@ -1,4 +1,5 @@
 #include "room.h"
+#include "chat.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -8,6 +9,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <time.h>
 
 #define MAX_ROOMS 100
 Room rooms[MAX_ROOMS];
@@ -218,7 +220,7 @@ static int room_trouver_index(Room *room) {
   return -1;
 }
 
-void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur) {
+void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur, const char *username) {
   (void)ma_couleur;
   MsgHeader header;
   char buf[512];
@@ -369,6 +371,30 @@ void room_boucle_jeu(Room *room, int mon_socket, int ma_couleur) {
       }
       pthread_mutex_unlock(&room->mutex);
       break;
+
+    } else if (header.type == REQ_CHAT) {
+      // Chat : construire la réponse horodatée et broadcaster
+      str_ReqChat *req_chat = (str_ReqChat *)buf;
+      str_RepChat rep_chat;
+      memset(&rep_chat, 0, sizeof(rep_chat));
+
+      strncpy(rep_chat.username, username, sizeof(rep_chat.username) - 1);
+      strncpy(rep_chat.msg, req_chat->msg, sizeof(rep_chat.msg) - 1);
+
+      // Horodatage
+      time_t now = time(NULL);
+      struct tm *tm = localtime(&now);
+      rep_chat.heure = (short)tm->tm_hour;
+      rep_chat.minute = (short)tm->tm_min;
+
+      printf("[chat] [%02d:%02d] %s : %s\n", rep_chat.heure, rep_chat.minute,
+             rep_chat.username, rep_chat.msg);
+
+      // Diffuser à tous les membres de la room sauf l'émetteur
+      diffuser_chat_room(room, &rep_chat, mon_socket);
+
+      // Envoyer aussi à l'émetteur (confirmation / écho)
+      send_message(mon_socket, REP_CHAT, &rep_chat, sizeof(rep_chat));
 
     } else {
       printf("[room] type de message inattendu : %d\n", header.type);

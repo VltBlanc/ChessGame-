@@ -13,7 +13,9 @@
 #define ASSETS_FOLDER "dist/assets/"
 #endif
 
-#define SCREEN_WIDTH 800
+#define BOARD_SIZE 800
+#define CHAT_PANEL_WIDTH 300
+#define SCREEN_WIDTH (BOARD_SIZE + CHAT_PANEL_WIDTH)
 #define SCREEN_HEIGHT 800
 
 #define PROMOTION_GUI_HEIGHT 150
