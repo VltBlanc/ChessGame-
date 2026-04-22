@@ -100,12 +100,12 @@ int lancement_client(int argc, char *argv[]) {
     }
 
 
-    // On récupère la couleur (1, 0) ou le mode spectateur (-1)
+    // On récupère la couleur (0=noir, 1=blanc) ou le mode spectateur (3)
         int couleur_ou_mode = traiter_requete_jeu(dS, m);
 
-        // On lance la fenêtre de jeu
-        if (couleur_ou_mode >= 0 && couleur_ou_mode <= 2) {
-            printf("[client] Lancement de l'interface graphique...\n");
+        // On lance la fenêtre de jeu (0=noir, 1=blanc, 3=spectateur)
+        if (couleur_ou_mode == 0 || couleur_ou_mode == 1 || couleur_ou_mode == 3) {
+            printf("[client] Lancement de l'interface graphique (mode=%d)...\n", couleur_ou_mode);
             game_network_play(dS, couleur_ou_mode);
         }
   }
@@ -333,7 +333,7 @@ int traiter_requete_jeu(int dS, char *m) {
 
         if (rep.resultat == STATUS_OK) {
             printf("Mode spectateur activé sur la partie contre : %s\n", rep.adversaire);
-            return 2; // Indique au moteur de jeu qu'on est spectateur
+            return 3; // Indique au moteur de jeu qu'on est spectateur (convention: 3)
         } else {
             printf("Aucune partie en cours à observer.\n");
             return -1; // Code d'erreur spécifique pour éviter de lancer la boucle de jeu

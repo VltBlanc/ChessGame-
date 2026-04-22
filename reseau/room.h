@@ -18,6 +18,10 @@ typedef struct {
     // État du jeu
     int trait;           // 0 = joueur[0] joue (blanc), 1 = joueur[1] joue (noir)
 
+    // Compteur de threads actifs dans room_boucle_jeu (joueurs + spectateurs)
+    // Le dernier thread à sortir appelle room_supprimer()
+    int threads_actifs;
+
     // Historique de la partie
     historique_partie hist;
     char username_blanc[32];
@@ -29,7 +33,11 @@ extern Room rooms[];
 extern int nb_rooms;
 extern pthread_mutex_t mutex_rooms;
 
+// Crée ou réutilise une room. Retourne l'index de la room.
 int room_creer();
+
+// Supprime/libère une room terminée (appelé par le dernier thread)
+void room_supprimer(int room_idx);
 
 int room_rejoindre_spectateur(Room *room, int socket);
 int room_demarre(Room *room);
